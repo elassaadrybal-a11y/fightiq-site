@@ -25,6 +25,7 @@
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
 }
 
 body {
@@ -33,20 +34,43 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-html {
-  scroll-padding-top: 5rem;
-}
-
+/* Phone size and tilt. Mobile first, desktop overrides below. */
 .phone-vars {
-  --w: min(44vw, 18svh);
+  --w: min(68vw, calc((100svh - 5.25rem) * 0.37));
   --depth: calc(var(--w) * 0.11);
+  --persp: 1100px;
+  --ry0: -22deg;
+  --ryr: 44deg;
+  --rx0: 8deg;
+  --rxr: -8deg;
+  --rz0: -3deg;
+  --rzr: 6deg;
 }
 
 @media (min-width: 768px) {
   .phone-vars {
     --w: min(22vw, 30svh);
+    --persp: 1400px;
+    --ry0: -32deg;
+    --ryr: 64deg;
+    --rx0: 10deg;
+    --rxr: -12deg;
+    --rz0: -4deg;
+    --rzr: 8deg;
   }
   .beat-side {
     width: calc(50% - var(--w) / 2 - 3rem);
+  }
+}
+
+/* Text cards on phones: a blurred panel over the phone */
+@media (max-width: 767px) {
+  .beat-card {
+    background: rgba(12, 10, 18, 0.55);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    padding: 1.5rem 1.25rem;
   }
 }

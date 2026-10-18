@@ -54,7 +54,7 @@ const beats: Beat[] = [
 const screens = Array.from(new Set(beats.map((b) => b.screen ?? DEFAULT_SCREEN)));
 
 const PHONE_TRANSFORM =
-  "perspective(1400px) rotateY(calc(-32deg + var(--p) * 64deg)) rotateX(calc(10deg - var(--p) * 12deg)) rotateZ(calc(-4deg + var(--p) * 8deg))";
+  "perspective(var(--persp)) rotateY(calc(var(--ry0) + var(--p) * var(--ryr))) rotateX(calc(var(--rx0) + var(--p) * var(--rxr))) rotateZ(calc(var(--rz0) + var(--p) * var(--rzr)))";
 
 function subscribeReducedMotion(callback: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -134,7 +134,7 @@ function Phone({ activeScreen }: { activeScreen: string }) {
               alt={src === activeScreen ? "Fight IQ app preview" : ""}
               fill
               priority={i === 0}
-              sizes="(max-width: 768px) 60vw, 340px"
+              sizes="(max-width: 768px) 70vw, 340px"
               className={`object-cover object-top transition-opacity duration-500 ${
                 src === activeScreen ? "opacity-100" : "opacity-0"
               }`}
@@ -157,35 +157,43 @@ function BeatText({ beat, active }: { beat: Beat; active: boolean }) {
   const Heading = beat.cta ? "h1" : "h2";
   return (
     <div
-      className={`beat-side flex w-full flex-col items-center text-center transition-opacity duration-500 ${
-        beat.side === "left"
-          ? "md:items-end md:text-right"
-          : "md:items-start md:text-left"
-      } ${active ? "opacity-100" : "opacity-30"}`}
+      className={`beat-side w-full transition-opacity duration-500 ${
+        active ? "md:opacity-100" : "md:opacity-30"
+      }`}
     >
-      <p className="text-xs uppercase tracking-[0.25em] text-accent-glow">
-        {beat.kicker}
-      </p>
-      <Heading className="mt-3 text-3xl font-semibold leading-[1.08] tracking-tight md:text-4xl lg:text-5xl">
-        {beat.title}
-      </Heading>
-      <p className="mt-4 max-w-sm text-muted">{beat.text}</p>
-      {beat.cta && (
-        <div className="mt-6 flex flex-wrap justify-center gap-3 md:justify-end">
-          <a
-            href="#products"
-            className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-glow"
-          >
-            See what you get
-          </a>
-          <a
-            href="#notify"
-            className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:bg-surface"
-          >
-            Get notified
-          </a>
-        </div>
-      )}
+      <div
+        className={`beat-card flex flex-col items-center text-center ${
+          beat.side === "left"
+            ? "md:items-end md:text-right"
+            : "md:items-start md:text-left"
+        }`}
+      >
+        <p className="text-xs uppercase tracking-[0.25em] text-accent-glow">
+          {beat.kicker}
+        </p>
+        <Heading className="mt-3 text-2xl font-semibold leading-[1.1] tracking-tight md:text-4xl lg:text-5xl">
+          {beat.title}
+        </Heading>
+        <p className="mt-3 max-w-sm text-sm text-[#b9b6c4] md:mt-4 md:text-base md:text-muted">
+          {beat.text}
+        </p>
+        {beat.cta && (
+          <div className="mt-5 flex flex-wrap justify-center gap-3 md:mt-6 md:justify-end">
+            <a
+              href="#products"
+              className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-glow"
+            >
+              See what you get
+            </a>
+            <a
+              href="#notify"
+              className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:bg-surface"
+            >
+              Get notified
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -213,18 +221,27 @@ export default function PhoneScroll() {
       const p = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
       section.style.setProperty("--p", p.toFixed(4));
 
-      const focus = window.innerHeight * 0.5;
       let best = 0;
-      let bestDist = Infinity;
-      beatRefs.current.forEach((el, i) => {
-        if (!el) return;
-        const r = el.getBoundingClientRect();
-        const d = Math.abs(r.top + r.height / 2 - focus);
-        if (d < bestDist) {
-          bestDist = d;
-          best = i;
-        }
-      });
+      if (window.innerWidth < 768) {
+        // Phones: every beat is one screen tall, the card sits at its bottom
+        const h = beatRefs.current[0]?.offsetHeight || window.innerHeight;
+        best = Math.min(
+          beats.length - 1,
+          Math.max(0, Math.floor(-rect.top / h + 0.19)),
+        );
+      } else {
+        const focus = window.innerHeight * 0.5;
+        let bestDist = Infinity;
+        beatRefs.current.forEach((el, i) => {
+          if (!el) return;
+          const r = el.getBoundingClientRect();
+          const d = Math.abs(r.top + r.height / 2 - focus);
+          if (d < bestDist) {
+            bestDist = d;
+            best = i;
+          }
+        });
+      }
       setActive((current) => (current === best ? current : best));
     };
     const schedule = () => {
@@ -272,11 +289,11 @@ export default function PhoneScroll() {
       id="top"
       ref={sectionRef}
       style={{ "--p": 0 } as CSSProperties}
-      className="phone-vars relative isolate"
+      className="phone-vars relative isolate overflow-x-clip"
     >
-      {/* Phone track: full height, so the phone can stick while text scrolls */}
+      {/* Phone track: the phone sticks while the text scrolls over it */}
       <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="sticky top-0 flex h-[calc(4rem+44svh)] items-center justify-center bg-background pt-16 md:h-svh md:bg-transparent">
+        <div className="sticky top-0 flex h-svh items-start justify-center pt-[5.25rem] md:items-center md:pt-16">
           <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_45%,rgba(139,31,224,0.30),transparent_70%)]" />
           <div className="flex flex-col items-center">
             <Phone activeScreen={activeScreen} />
@@ -284,19 +301,21 @@ export default function PhoneScroll() {
               App preview · sample data
             </p>
           </div>
-          <div className="absolute inset-x-0 top-full h-8 bg-gradient-to-b from-background to-transparent md:hidden" />
+          <p className="absolute inset-x-0 top-[4.4rem] text-center text-[10px] uppercase tracking-[0.2em] text-muted md:hidden">
+            App preview · sample data
+          </p>
         </div>
       </div>
 
-      {/* Text beats scroll normally */}
-      <div className="relative z-0 mx-auto max-w-6xl px-6">
+      {/* Text beats scroll normally, above the phone */}
+      <div className="relative z-20 mx-auto max-w-6xl px-6">
         {beats.map((b, i) => (
           <div
             key={b.title}
             ref={(el) => {
               beatRefs.current[i] = el;
             }}
-            className={`flex min-h-svh items-start pt-[calc(4rem+44svh+1.25rem)] md:min-h-[85svh] md:items-center md:pt-0 ${
+            className={`flex min-h-svh items-end pb-5 md:min-h-[85svh] md:items-center md:pb-0 ${
               b.side === "left" ? "md:justify-start" : "md:justify-end"
             }`}
           >
