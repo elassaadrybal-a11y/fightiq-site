@@ -6,12 +6,11 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
-  type CSSProperties,
   type RefObject,
 } from "react";
 
 const DEFAULT_SCREEN = "/screens/dashboard.png";
-const LAYERS = 14;
+const LAYERS = 20;
 
 type Beat = {
   kicker: string;
@@ -49,9 +48,39 @@ const beats: Beat[] = [
 
 const screens = Array.from(new Set(beats.map((b) => b.screen ?? DEFAULT_SCREEN)));
 
-// Starting pose, read from the CSS variables so it matches before scripts run
+// One pose per text block: angles in degrees, x is the sideways shift
+// (0 = centred, 1 = full shift to the right), s is scale.
+type Pose = { ry: number; rx: number; rz: number; x: number; s: number };
+
+const POSES_DESKTOP: Pose[] = [
+  { ry: -32, rx: 10, rz: -4, x: 0, s: 1 },
+  { ry: -20, rx: 6, rz: -3, x: 1, s: 1.02 },
+  { ry: -8, rx: 3, rz: -1, x: 1, s: 1.04 },
+  { ry: 10, rx: 2, rz: 2, x: 1, s: 1.02 },
+];
+
+const POSES_MOBILE: Pose[] = [
+  { ry: -22, rx: 8, rz: -3, x: 0, s: 1 },
+  { ry: -14, rx: 5, rz: -2, x: 1, s: 1 },
+  { ry: -5, rx: 3, rz: -1, x: 1, s: 1 },
+  { ry: 8, rx: 2, rz: 1, x: 1, s: 1 },
+];
+
 const INITIAL_TRANSFORM =
-  "perspective(var(--persp)) rotateY(var(--ry0)) rotateX(var(--rx0)) rotateZ(var(--rz0))";
+  "rotateY(var(--ry0)) rotateX(var(--rx0)) rotateZ(var(--rz0))";
+
+const smooth = (a: number, b: number, v: number) => {
+  const t = Math.min(1, Math.max(0, (v - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+const mix = (a: Pose, b: Pose, g: number): Pose => ({
+  ry: a.ry + (b.ry - a.ry) * g,
+  rx: a.rx + (b.rx - a.rx) * g,
+  rz: a.rz + (b.rz - a.rz) * g,
+  x: a.x + (b.x - a.x) * g,
+  s: a.s + (b.s - a.s) * g,
+});
 
 function subscribeReducedMotion(callback: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -67,13 +96,20 @@ function getServerReducedMotion() {
   return false;
 }
 
+const RIM_BACKGROUND =
+  "linear-gradient(90deg, #8a8697 0%, #3a3745 14%, #2a2833 50%, #3a3745 86%, #8a8697 100%)";
+const BODY_BACKGROUND =
+  "linear-gradient(90deg, #5a5668 0%, #24222c 14%, #1a1822 50%, #24222c 86%, #5a5668 100%)";
+
 function Phone({
   activeScreen,
+  shifterRef,
   rotatorRef,
   glareRef,
   staticTransform,
 }: {
   activeScreen: string;
+  shifterRef?: RefObject<HTMLDivElement | null>;
   rotatorRef?: RefObject<HTMLDivElement | null>;
   glareRef?: RefObject<HTMLDivElement | null>;
   staticTransform?: string;
@@ -82,83 +118,138 @@ function Phone({
 
   return (
     <div
-      ref={rotatorRef}
+      ref={shifterRef}
       style={{
         position: "relative",
         width: "var(--w)",
         height: "calc(var(--w) * 2.1667)",
-        transform: staticTransform ?? INITIAL_TRANSFORM,
-        transformStyle: "preserve-3d",
+        perspective: "var(--persp)",
         willChange: "transform",
       }}
     >
-      {/* Body: stacked layers give the phone its thickness */}
-      {Array.from({ length: LAYERS }, (_, i) => (
-        <div
-          key={i}
-          className="absolute inset-0"
-          style={
-            {
-              "--i": i,
-              borderRadius: radius,
-              transform: `translateZ(calc((var(--i) - ${(LAYERS - 1) / 2}) * var(--depth) / ${LAYERS - 1}))`,
-              background:
-                "linear-gradient(90deg, #5a5668 0%, #24222c 14%, #1a1822 50%, #24222c 86%, #5a5668 100%)",
-            } as CSSProperties
-          }
-        />
-      ))}
-
-      {/* Back */}
+      {/* Soft glow on the ground under the phone */}
       <div
-        className="absolute inset-0"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
-          borderRadius: radius,
-          transform: "translateZ(calc(var(--depth) / -2 - 1.5px)) rotateY(180deg)",
-          backfaceVisibility: "hidden",
-          background: "linear-gradient(135deg, #2a2833, #14121a)",
+          bottom: "calc(var(--w) * -0.1)",
+          width: "calc(var(--w) * 0.9)",
+          height: "calc(var(--w) * 0.14)",
+          background:
+            "radial-gradient(ellipse at center, rgba(139,31,224,0.40), transparent 70%)",
         }}
       />
 
-      {/* Front: bezel and screen */}
       <div
-        className="absolute inset-0"
+        ref={rotatorRef}
         style={{
-          borderRadius: radius,
-          transform: "translateZ(calc(var(--depth) / 2 + 1.5px))",
-          backfaceVisibility: "hidden",
-          background: "#0b0a0f",
-          boxShadow: "inset 0 0 0 calc(var(--w) * 0.012) #3a3745",
+          position: "absolute",
+          inset: 0,
+          transform: staticTransform ?? INITIAL_TRANSFORM,
+          transformStyle: "preserve-3d",
+          willChange: "transform",
         }}
       >
-        <div
-          className="absolute overflow-hidden"
-          style={{
-            inset: "calc(var(--w) * 0.03)",
-            borderRadius: "calc(var(--w) * 0.13)",
-          }}
-        >
-          {screens.map((src, i) => (
-            <Image
-              key={src}
-              src={src}
-              alt={src === activeScreen ? "Fight IQ app preview" : ""}
-              fill
-              priority={i === 0}
-              sizes="(max-width: 768px) 70vw, 340px"
-              className={`object-cover object-top transition-opacity duration-500 ${
-                src === activeScreen ? "opacity-100" : "opacity-0"
-              }`}
-            />
-          ))}
+        {/* Body: stacked layers give the phone its thickness */}
+        {Array.from({ length: LAYERS }, (_, i) => (
           <div
-            ref={glareRef}
-            className="pointer-events-none absolute inset-0"
+            key={i}
+            className="absolute inset-0"
             style={{
+              borderRadius: radius,
+              transform: `translateZ(calc((${i} - ${(LAYERS - 1) / 2}) * var(--depth) / ${LAYERS - 1}))`,
               background:
-                "linear-gradient(110deg, rgba(255,255,255,0.14), transparent 38%)",
+                i === 0 || i === LAYERS - 1 ? RIM_BACKGROUND : BODY_BACKGROUND,
             }}
           />
+        ))}
+
+        {/* Side buttons */}
+        <div
+          className="absolute"
+          style={{
+            left: "calc(var(--w) * -0.011)",
+            top: "19%",
+            width: "calc(var(--w) * 0.013)",
+            height: "4%",
+            borderRadius: 2,
+            background: "#4a4757",
+          }}
+        />
+        <div
+          className="absolute"
+          style={{
+            left: "calc(var(--w) * -0.011)",
+            top: "26%",
+            width: "calc(var(--w) * 0.013)",
+            height: "8%",
+            borderRadius: 2,
+            background: "#4a4757",
+          }}
+        />
+        <div
+          className="absolute"
+          style={{
+            right: "calc(var(--w) * -0.011)",
+            top: "28%",
+            width: "calc(var(--w) * 0.013)",
+            height: "11%",
+            borderRadius: 2,
+            background: "#4a4757",
+          }}
+        />
+
+        {/* Back */}
+        <div
+          className="absolute inset-0"
+          style={{
+            borderRadius: radius,
+            transform:
+              "translateZ(calc(var(--depth) / -2 - 1.5px)) rotateY(180deg)",
+            backfaceVisibility: "hidden",
+            background: "linear-gradient(135deg, #2a2833, #14121a)",
+          }}
+        />
+
+        {/* Front: bezel and screen */}
+        <div
+          className="absolute inset-0"
+          style={{
+            borderRadius: radius,
+            transform: "translateZ(calc(var(--depth) / 2 + 1.5px))",
+            backfaceVisibility: "hidden",
+            background: "#0b0a0f",
+            boxShadow: "inset 0 0 0 calc(var(--w) * 0.012) #3a3745",
+          }}
+        >
+          <div
+            className="absolute overflow-hidden"
+            style={{
+              inset: "calc(var(--w) * 0.03)",
+              borderRadius: "calc(var(--w) * 0.13)",
+            }}
+          >
+            {screens.map((src, i) => (
+              <Image
+                key={src}
+                src={src}
+                alt={src === activeScreen ? "Fight IQ app preview" : ""}
+                fill
+                priority={i === 0}
+                sizes="(max-width: 768px) 70vw, 340px"
+                className={`object-cover object-top transition-opacity duration-500 ${
+                  src === activeScreen ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            ))}
+            <div
+              ref={glareRef}
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(120deg, rgba(255,255,255,0.14), transparent 38%)",
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -217,6 +308,7 @@ function BeatText({
 export default function PhoneScroll() {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const shifterRef = useRef<HTMLDivElement>(null);
   const rotatorRef = useRef<HTMLDivElement>(null);
   const glareRef = useRef<HTMLDivElement>(null);
   const beatRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -232,50 +324,43 @@ export default function PhoneScroll() {
     const section = sectionRef.current;
     if (!section) return;
 
-    const readAngles = () => {
-      const s = getComputedStyle(section);
-      const n = (name: string) => parseFloat(s.getPropertyValue(name)) || 0;
-      return {
-        persp: n("--persp") || 1200,
-        ry0: n("--ry0"),
-        ryr: n("--ryr"),
-        rx0: n("--rx0"),
-        rxr: n("--rxr"),
-        rz0: n("--rz0"),
-        rzr: n("--rzr"),
-      };
-    };
-    let angles = readAngles();
-
-    let target = 0;
-    let current = 0;
+    let target: Pose = POSES_DESKTOP[0];
+    const current: Pose = { ...POSES_DESKTOP[0] };
     let tickFrame = 0;
     let updateFrame = 0;
 
-    const apply = (p: number) => {
+    const apply = (pose: Pose) => {
       const rotator = rotatorRef.current;
       if (rotator) {
-        rotator.style.transform = `perspective(${angles.persp}px) rotateY(${
-          angles.ry0 + p * angles.ryr
-        }deg) rotateX(${angles.rx0 + p * angles.rxr}deg) rotateZ(${
-          angles.rz0 + p * angles.rzr
-        }deg)`;
+        rotator.style.transform = `rotateY(${pose.ry}deg) rotateX(${pose.rx}deg) rotateZ(${pose.rz}deg) scale(${pose.s})`;
+      }
+      const shifter = shifterRef.current;
+      if (shifter) {
+        shifter.style.transform = `translate3d(calc(var(--shift) * ${pose.x}), 0px, 0px)`;
       }
       const glare = glareRef.current;
       if (glare) {
         glare.style.background = `linear-gradient(${
-          110 + p * 50
+          120 - pose.ry * 1.2
         }deg, rgba(255,255,255,0.14), transparent 38%)`;
       }
     };
 
-    // Ease toward the scroll position so jumpy scroll events don't show up as jitter
+    // Ease toward the target pose so uneven scroll events don't show as jitter
     const tick = () => {
       tickFrame = 0;
-      const diff = target - current;
-      current = Math.abs(diff) < 0.0005 ? target : current + diff * 0.14;
+      let settled = true;
+      (Object.keys(current) as (keyof Pose)[]).forEach((k) => {
+        const d = target[k] - current[k];
+        if (Math.abs(d) < 0.001) {
+          current[k] = target[k];
+        } else {
+          current[k] += d * 0.16;
+          settled = false;
+        }
+      });
       apply(current);
-      if (current !== target) tickFrame = requestAnimationFrame(tick);
+      if (!settled) tickFrame = requestAnimationFrame(tick);
     };
 
     const update = () => {
@@ -283,31 +368,39 @@ export default function PhoneScroll() {
       // The sticky stage is exactly one small-viewport tall, so this doesn't
       // change when mobile browser toolbars slide in and out.
       const stageH = stageRef.current?.offsetHeight ?? window.innerHeight;
-      const total = rect.height - stageH;
-      target = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
-      if (!tickFrame) tickFrame = requestAnimationFrame(tick);
+      const isMobile = window.innerWidth < 768;
+      const poses = isMobile ? POSES_MOBILE : POSES_DESKTOP;
+      const pick = (i: number) => poses[Math.min(i, poses.length - 1)];
+      const s = -rect.top;
 
-      let best = 0;
-      if (window.innerWidth < 768) {
-        // Phones: every beat is one screen tall, the card sits at its bottom
-        const h = beatRefs.current[0]?.offsetHeight || stageH;
-        best = Math.min(
-          beats.length - 1,
-          Math.max(0, Math.floor(-rect.top / h + 0.19)),
-        );
+      // The scroll position at which each text block is "in focus"
+      const anchors = beatRefs.current.map((el) =>
+        el
+          ? isMobile
+            ? el.offsetTop
+            : el.offsetTop + el.offsetHeight / 2 - stageH / 2
+          : 0,
+      );
+      const last = anchors.length - 1;
+
+      let index = 0;
+      while (index < last && s >= anchors[index + 1]) index++;
+
+      let best = index;
+      if (s <= anchors[0]) {
+        target = pick(0);
+        best = 0;
+      } else if (index >= last) {
+        target = pick(last);
+        best = last;
       } else {
-        const focus = stageH * 0.5;
-        let bestDist = Infinity;
-        beatRefs.current.forEach((el, i) => {
-          if (!el) return;
-          const r = el.getBoundingClientRect();
-          const d = Math.abs(r.top + r.height / 2 - focus);
-          if (d < bestDist) {
-            bestDist = d;
-            best = i;
-          }
-        });
+        const f = (s - anchors[index]) / (anchors[index + 1] - anchors[index]);
+        const g = isMobile ? smooth(0.4, 0.95, f) : smooth(0.25, 0.75, f);
+        target = mix(pick(index), pick(index + 1), g);
+        best = f < (isMobile ? 0.8 : 0.5) ? index : index + 1;
       }
+
+      if (!tickFrame) tickFrame = requestAnimationFrame(tick);
       setActive((cur) => (cur === best ? cur : best));
     };
 
@@ -318,17 +411,13 @@ export default function PhoneScroll() {
         update();
       });
     };
-    const onResize = () => {
-      angles = readAngles();
-      onScroll();
-    };
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", onScroll);
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", onScroll);
       if (tickFrame) cancelAnimationFrame(tickFrame);
       if (updateFrame) cancelAnimationFrame(updateFrame);
     };
@@ -340,7 +429,7 @@ export default function PhoneScroll() {
         <div className="phone-vars mx-auto flex max-w-3xl flex-col items-center gap-12 px-6">
           <Phone
             activeScreen={DEFAULT_SCREEN}
-            staticTransform="perspective(1200px) rotateY(-12deg) rotateX(4deg) rotateZ(-2deg)"
+            staticTransform="rotateY(-12deg) rotateX(4deg) rotateZ(-2deg)"
           />
           {beats.map((b) => (
             <div key={b.title} className="text-center">
@@ -373,13 +462,12 @@ export default function PhoneScroll() {
           className="sticky top-0 flex h-svh items-start justify-center pt-[5.25rem] md:items-center md:pt-16"
         >
           <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_45%,rgba(139,31,224,0.30),transparent_70%)]" />
-          <div className="phone-shift" data-shifted={active > 0}>
-            <Phone
-              activeScreen={activeScreen}
-              rotatorRef={rotatorRef}
-              glareRef={glareRef}
-            />
-          </div>
+          <Phone
+            activeScreen={activeScreen}
+            shifterRef={shifterRef}
+            rotatorRef={rotatorRef}
+            glareRef={glareRef}
+          />
         </div>
       </div>
 
