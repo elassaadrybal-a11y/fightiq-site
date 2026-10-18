@@ -1,3 +1,5 @@
+import PhoneScroll from "./components/PhoneScroll";
+import SiteHeader from "./components/SiteHeader";
 import { site } from "./site";
 
 const products = [
@@ -50,160 +52,113 @@ const faqs = [
 
 export default function Home() {
   return (
-    <main>
-      <section className="relative isolate overflow-hidden">
-        <video
-          className="absolute inset-0 -z-20 h-full w-full object-cover opacity-30"
-          src="/hero.mp4"
-          poster="/hero-poster.jpg"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-hidden="true"
-        />
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(139,31,224,0.35),transparent_70%)]" />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-[linear-gradient(to_bottom,transparent,#09080d)]" />
+    <>
+      <SiteHeader />
+      <main>
+        <PhoneScroll />
 
-        <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-          <span className="text-sm font-semibold uppercase tracking-[0.25em]">
-            {site.name}
-          </span>
-          <a
-            href="#notify"
-            className="text-sm text-muted transition hover:text-foreground"
-          >
-            Get notified
-          </a>
-        </header>
-
-        <div className="mx-auto max-w-5xl px-6 pb-28 pt-20 sm:pt-32">
-          <p className="text-xs uppercase tracking-[0.25em] text-accent-glow">
-            {site.tagline}
-          </p>
-          <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
-            Your sparring, watched like a coach saw every second.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-muted">
-            Upload your footage. Get a breakdown of your habits, openings and
-            drills in minutes.
-          </p>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <a
-              href="#products"
-              className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-glow"
-            >
-              See what you get
-            </a>
-            <a
-              href="#notify"
-              className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:bg-surface"
-            >
-              Get notified
-            </a>
+        <section id="products" className="mx-auto max-w-5xl px-6 py-20">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Two ways to use it
+          </h2>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            {products.map((p) => (
+              <div
+                key={p.title}
+                className="rounded-3xl border border-border bg-surface p-8"
+              >
+                <h3 className="text-xl font-semibold">{p.title}</h3>
+                <p className="mt-3 text-muted">{p.text}</p>
+                <ul className="mt-6 space-y-2 text-sm">
+                  {p.points.map((pt) => (
+                    <li key={pt} className="flex items-center gap-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-accent-glow" />
+                      {pt}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="products" className="mx-auto max-w-5xl px-6 py-20">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Two ways to use it
-        </h2>
-        <div className="mt-10 grid gap-4 md:grid-cols-2">
-          {products.map((p) => (
-            <div
-              key={p.title}
-              className="rounded-3xl border border-border bg-surface p-8"
-            >
-              <h3 className="text-xl font-semibold">{p.title}</h3>
-              <p className="mt-3 text-muted">{p.text}</p>
-              <ul className="mt-6 space-y-2 text-sm">
-                {p.points.map((pt) => (
-                  <li key={pt} className="flex items-center gap-3">
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent-glow" />
-                    {pt}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </section>
+        <section className="mx-auto max-w-5xl px-6 py-20">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            How it works
+          </h2>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {steps.map((s, i) => (
+              <div
+                key={s.title}
+                className="rounded-3xl border border-border p-8"
+              >
+                <p className="text-sm text-accent-glow">0{i + 1}</p>
+                <h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
+                <p className="mt-2 text-sm text-muted">{s.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      <section className="mx-auto max-w-5xl px-6 py-20">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          How it works
-        </h2>
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
-          {steps.map((s, i) => (
-            <div
-              key={s.title}
-              className="rounded-3xl border border-border p-8"
-            >
-              <p className="text-sm text-accent-glow">0{i + 1}</p>
-              <h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm text-muted">{s.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+        <section className="mx-auto max-w-5xl px-6 py-20">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            A look at a report
+          </h2>
+          <div className="mt-10 rounded-3xl border border-border bg-surface p-8 sm:p-12">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted">
+              Sample report
+            </p>
+            <p className="mt-3 max-w-xl text-muted">
+              Placeholder. Replace this card with screenshots of a real
+              analysis, with names removed, before the site goes public.
+            </p>
+          </div>
+        </section>
 
-      <section className="mx-auto max-w-5xl px-6 py-20">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          A look at a report
-        </h2>
-        <div className="mt-10 rounded-3xl border border-border bg-surface p-8 sm:p-12">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted">
-            Sample report
-          </p>
-          <p className="mt-3 max-w-xl text-muted">
-            Placeholder. Replace this card with screenshots of a real analysis,
-            with names removed, before the site goes public.
-          </p>
-        </div>
-      </section>
+        <section id="faq" className="mx-auto max-w-3xl px-6 py-20">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Questions
+          </h2>
+          <div className="mt-8 divide-y divide-border border-y border-border">
+            {faqs.map((f) => (
+              <details key={f.q} className="group py-5">
+                <summary className="cursor-pointer list-none text-base font-medium">
+                  {f.q}
+                </summary>
+                <p className="mt-3 text-sm text-muted">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
 
-      <section className="mx-auto max-w-3xl px-6 py-20">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Questions
-        </h2>
-        <div className="mt-8 divide-y divide-border border-y border-border">
-          {faqs.map((f) => (
-            <details key={f.q} className="group py-5">
-              <summary className="cursor-pointer list-none text-base font-medium">
-                {f.q}
-              </summary>
-              <p className="mt-3 text-sm text-muted">{f.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      <section id="notify" className="mx-auto max-w-3xl px-6 py-24 text-center">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Launching soon
-        </h2>
-        <p className="mx-auto mt-4 max-w-md text-muted">
-          Email us and we will let you know when it opens.
-        </p>
-        <a
-          href={`mailto:${site.contactEmail}?subject=Notify%20me%20about%20launch`}
-          className="mt-8 inline-block rounded-full bg-accent px-8 py-3 text-sm font-semibold text-white transition hover:bg-accent-glow"
+        <section
+          id="notify"
+          className="mx-auto max-w-3xl px-6 py-24 text-center"
         >
-          Email us
-        </a>
-      </section>
+          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Launching soon
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-muted">
+            Email us and we will let you know when it opens.
+          </p>
+          <a
+            href={`mailto:${site.contactEmail}?subject=Notify%20me%20about%20launch`}
+            className="mt-8 inline-block rounded-full bg-accent px-8 py-3 text-sm font-semibold text-white transition hover:bg-accent-glow"
+          >
+            Email us
+          </a>
+        </section>
 
-      <footer className="border-t border-border px-6 py-10 text-center text-xs text-muted">
-        <p>
-          © 2026 {site.name} · {site.contactEmail}
-        </p>
-        <p className="mt-2">
-          Analysis is generated by AI and is not a substitute for qualified
-          coaching.
-        </p>
-      </footer>
-    </main>
+        <footer className="border-t border-border px-6 py-10 text-center text-xs text-muted">
+          <p>
+            © 2026 {site.name} · {site.contactEmail}
+          </p>
+          <p className="mt-2">
+            Analysis is generated by AI and is not a substitute for qualified
+            coaching.
+          </p>
+        </footer>
+      </main>
+    </>
   );
 }

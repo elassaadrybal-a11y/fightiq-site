@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Fight IQ | AI boxing analysis",
   description:
     "Upload sparring or opponent footage and get an AI-generated breakdown of habits, openings and drills.",

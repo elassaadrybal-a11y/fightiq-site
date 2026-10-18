@@ -32,3 +32,21 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+html {
+  scroll-padding-top: 5rem;
+}
+
+.phone-vars {
+  --w: min(44vw, 18svh);
+  --depth: calc(var(--w) * 0.11);
+}
+
+@media (min-width: 768px) {
+  .phone-vars {
+    --w: min(22vw, 30svh);
+  }
+  .beat-side {
+    width: calc(50% - var(--w) / 2 - 3rem);
+  }
+}
