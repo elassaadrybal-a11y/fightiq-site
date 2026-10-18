@@ -34,10 +34,11 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Phone size and tilt. Mobile first, desktop overrides below. */
+/* Phone size, tilt and sideways shift. Mobile first, desktop overrides below. */
 .phone-vars {
   --w: min(68vw, calc((100svh - 5.25rem) * 0.37));
   --depth: calc(var(--w) * 0.11);
+  --shift: 11vw;
   --persp: 1100px;
   --ry0: -22deg;
   --ryr: 44deg;
@@ -47,9 +48,18 @@ body {
   --rzr: 6deg;
 }
 
+.phone-shift {
+  transition: transform 900ms cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+
+.phone-shift[data-shifted="true"] {
+  transform: translateX(var(--shift));
+}
+
 @media (min-width: 768px) {
   .phone-vars {
     --w: min(22vw, 30svh);
+    --shift: 16vw;
     --persp: 1400px;
     --ry0: -32deg;
     --ryr: 64deg;
@@ -60,6 +70,9 @@ body {
   }
   .beat-side {
     width: calc(50% - var(--w) / 2 - 3rem);
+  }
+  .beat-shifted {
+    width: calc(50% + var(--shift) - var(--w) / 2 - 3rem);
   }
 }
 

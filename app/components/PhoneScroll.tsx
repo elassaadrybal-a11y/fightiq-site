@@ -7,13 +7,13 @@ import {
   useState,
   useSyncExternalStore,
   type CSSProperties,
+  type RefObject,
 } from "react";
 
 const DEFAULT_SCREEN = "/screens/dashboard.png";
 const LAYERS = 14;
 
 type Beat = {
-  side: "left" | "right";
   kicker: string;
   title: string;
   text: string;
@@ -25,26 +25,22 @@ type Beat = {
 // for example screen: "/screens/scanner.png".
 const beats: Beat[] = [
   {
-    side: "left",
     kicker: "AI boxing analysis",
     title: "Your sparring, watched like a coach saw every second.",
     text: "Upload your footage. Get a breakdown of your habits, openings and drills in minutes.",
     cta: true,
   },
   {
-    side: "right",
     kicker: "Sparring analysis",
     title: "See the patterns you can't feel mid-round.",
     text: "Strengths, recurring habits and drills pulled from your own footage.",
   },
   {
-    side: "left",
     kicker: "Opponent scanner",
     title: "Scout your next opponent.",
     text: "Tendencies, openings and a game plan to train against.",
   },
   {
-    side: "right",
     kicker: "Training score",
     title: "Show up, log it, watch it add up.",
     text: "A score and streaks that reward consistency, plus team leaderboards.",
@@ -53,8 +49,9 @@ const beats: Beat[] = [
 
 const screens = Array.from(new Set(beats.map((b) => b.screen ?? DEFAULT_SCREEN)));
 
-const PHONE_TRANSFORM =
-  "perspective(var(--persp)) rotateY(calc(var(--ry0) + var(--p) * var(--ryr))) rotateX(calc(var(--rx0) + var(--p) * var(--rxr))) rotateZ(calc(var(--rz0) + var(--p) * var(--rzr)))";
+// Starting pose, read from the CSS variables so it matches before scripts run
+const INITIAL_TRANSFORM =
+  "perspective(var(--persp)) rotateY(var(--ry0)) rotateX(var(--rx0)) rotateZ(var(--rz0))";
 
 function subscribeReducedMotion(callback: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -70,17 +67,29 @@ function getServerReducedMotion() {
   return false;
 }
 
-function Phone({ activeScreen }: { activeScreen: string }) {
+function Phone({
+  activeScreen,
+  rotatorRef,
+  glareRef,
+  staticTransform,
+}: {
+  activeScreen: string;
+  rotatorRef?: RefObject<HTMLDivElement | null>;
+  glareRef?: RefObject<HTMLDivElement | null>;
+  staticTransform?: string;
+}) {
   const radius = "calc(var(--w) * 0.16)";
 
   return (
     <div
+      ref={rotatorRef}
       style={{
         position: "relative",
         width: "var(--w)",
         height: "calc(var(--w) * 2.1667)",
-        transform: PHONE_TRANSFORM,
+        transform: staticTransform ?? INITIAL_TRANSFORM,
         transformStyle: "preserve-3d",
+        willChange: "transform",
       }}
     >
       {/* Body: stacked layers give the phone its thickness */}
@@ -105,7 +114,8 @@ function Phone({ activeScreen }: { activeScreen: string }) {
         className="absolute inset-0"
         style={{
           borderRadius: radius,
-          transform: "translateZ(calc(var(--depth) / -2 - 0.5px)) rotateY(180deg)",
+          transform: "translateZ(calc(var(--depth) / -2 - 1.5px)) rotateY(180deg)",
+          backfaceVisibility: "hidden",
           background: "linear-gradient(135deg, #2a2833, #14121a)",
         }}
       />
@@ -115,7 +125,8 @@ function Phone({ activeScreen }: { activeScreen: string }) {
         className="absolute inset-0"
         style={{
           borderRadius: radius,
-          transform: "translateZ(calc(var(--depth) / 2 + 0.5px))",
+          transform: "translateZ(calc(var(--depth) / 2 + 1.5px))",
+          backfaceVisibility: "hidden",
           background: "#0b0a0f",
           boxShadow: "inset 0 0 0 calc(var(--w) * 0.012) #3a3745",
         }}
@@ -141,10 +152,11 @@ function Phone({ activeScreen }: { activeScreen: string }) {
             />
           ))}
           <div
+            ref={glareRef}
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "linear-gradient(calc(110deg + var(--p) * 50deg), rgba(255,255,255,0.14), transparent 38%)",
+                "linear-gradient(110deg, rgba(255,255,255,0.14), transparent 38%)",
             }}
           />
         </div>
@@ -153,19 +165,23 @@ function Phone({ activeScreen }: { activeScreen: string }) {
   );
 }
 
-function BeatText({ beat, active }: { beat: Beat; active: boolean }) {
+function BeatText({
+  beat,
+  active,
+  shifted,
+}: {
+  beat: Beat;
+  active: boolean;
+  shifted: boolean;
+}) {
   const Heading = beat.cta ? "h1" : "h2";
   return (
-    <div
-      className={`beat-side w-full transition-opacity duration-500 ${
-        active ? "md:opacity-100" : "md:opacity-30"
-      }`}
-    >
+    <div className={`beat-side w-full ${shifted ? "beat-shifted" : ""}`}>
       <div
-        className={`beat-card flex flex-col items-center text-center ${
-          beat.side === "left"
-            ? "md:items-end md:text-right"
-            : "md:items-start md:text-left"
+        className={`beat-card flex flex-col items-center text-center transition-all duration-700 ease-out md:items-start md:text-left ${
+          active
+            ? "translate-x-0 opacity-100"
+            : "-translate-x-8 opacity-0 md:-translate-x-6 md:opacity-25"
         }`}
       >
         <p className="text-xs uppercase tracking-[0.25em] text-accent-glow">
@@ -178,7 +194,7 @@ function BeatText({ beat, active }: { beat: Beat; active: boolean }) {
           {beat.text}
         </p>
         {beat.cta && (
-          <div className="mt-5 flex flex-wrap justify-center gap-3 md:mt-6 md:justify-end">
+          <div className="mt-5 flex flex-wrap justify-center gap-3 md:mt-6 md:justify-start">
             <a
               href="#products"
               className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-glow"
@@ -200,6 +216,9 @@ function BeatText({ beat, active }: { beat: Beat; active: boolean }) {
 
 export default function PhoneScroll() {
   const sectionRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const rotatorRef = useRef<HTMLDivElement>(null);
+  const glareRef = useRef<HTMLDivElement>(null);
   const beatRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [active, setActive] = useState(0);
   const reduced = useSyncExternalStore(
@@ -213,24 +232,71 @@ export default function PhoneScroll() {
     const section = sectionRef.current;
     if (!section) return;
 
-    let frame = 0;
+    const readAngles = () => {
+      const s = getComputedStyle(section);
+      const n = (name: string) => parseFloat(s.getPropertyValue(name)) || 0;
+      return {
+        persp: n("--persp") || 1200,
+        ry0: n("--ry0"),
+        ryr: n("--ryr"),
+        rx0: n("--rx0"),
+        rxr: n("--rxr"),
+        rz0: n("--rz0"),
+        rzr: n("--rzr"),
+      };
+    };
+    let angles = readAngles();
+
+    let target = 0;
+    let current = 0;
+    let tickFrame = 0;
+    let updateFrame = 0;
+
+    const apply = (p: number) => {
+      const rotator = rotatorRef.current;
+      if (rotator) {
+        rotator.style.transform = `perspective(${angles.persp}px) rotateY(${
+          angles.ry0 + p * angles.ryr
+        }deg) rotateX(${angles.rx0 + p * angles.rxr}deg) rotateZ(${
+          angles.rz0 + p * angles.rzr
+        }deg)`;
+      }
+      const glare = glareRef.current;
+      if (glare) {
+        glare.style.background = `linear-gradient(${
+          110 + p * 50
+        }deg, rgba(255,255,255,0.14), transparent 38%)`;
+      }
+    };
+
+    // Ease toward the scroll position so jumpy scroll events don't show up as jitter
+    const tick = () => {
+      tickFrame = 0;
+      const diff = target - current;
+      current = Math.abs(diff) < 0.0005 ? target : current + diff * 0.14;
+      apply(current);
+      if (current !== target) tickFrame = requestAnimationFrame(tick);
+    };
+
     const update = () => {
-      frame = 0;
       const rect = section.getBoundingClientRect();
-      const total = rect.height - window.innerHeight;
-      const p = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
-      section.style.setProperty("--p", p.toFixed(4));
+      // The sticky stage is exactly one small-viewport tall, so this doesn't
+      // change when mobile browser toolbars slide in and out.
+      const stageH = stageRef.current?.offsetHeight ?? window.innerHeight;
+      const total = rect.height - stageH;
+      target = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
+      if (!tickFrame) tickFrame = requestAnimationFrame(tick);
 
       let best = 0;
       if (window.innerWidth < 768) {
         // Phones: every beat is one screen tall, the card sits at its bottom
-        const h = beatRefs.current[0]?.offsetHeight || window.innerHeight;
+        const h = beatRefs.current[0]?.offsetHeight || stageH;
         best = Math.min(
           beats.length - 1,
           Math.max(0, Math.floor(-rect.top / h + 0.19)),
         );
       } else {
-        const focus = window.innerHeight * 0.5;
+        const focus = stageH * 0.5;
         let bestDist = Infinity;
         beatRefs.current.forEach((el, i) => {
           if (!el) return;
@@ -242,30 +308,40 @@ export default function PhoneScroll() {
           }
         });
       }
-      setActive((current) => (current === best ? current : best));
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(update);
+      setActive((cur) => (cur === best ? cur : best));
     };
 
-    schedule();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
+    const onScroll = () => {
+      if (updateFrame) return;
+      updateFrame = requestAnimationFrame(() => {
+        updateFrame = 0;
+        update();
+      });
+    };
+    const onResize = () => {
+      angles = readAngles();
+      onScroll();
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
     return () => {
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      if (tickFrame) cancelAnimationFrame(tickFrame);
+      if (updateFrame) cancelAnimationFrame(updateFrame);
     };
   }, [reduced]);
 
   if (reduced) {
     return (
       <section id="top" className="relative overflow-hidden pb-20 pt-28">
-        <div
-          style={{ "--p": 0.5 } as CSSProperties}
-          className="phone-vars mx-auto flex max-w-3xl flex-col items-center gap-12 px-6"
-        >
-          <Phone activeScreen={DEFAULT_SCREEN} />
+        <div className="phone-vars mx-auto flex max-w-3xl flex-col items-center gap-12 px-6">
+          <Phone
+            activeScreen={DEFAULT_SCREEN}
+            staticTransform="perspective(1200px) rotateY(-12deg) rotateX(4deg) rotateZ(-2deg)"
+          />
           {beats.map((b) => (
             <div key={b.title} className="text-center">
               <p className="text-xs uppercase tracking-[0.25em] text-accent-glow">
@@ -288,22 +364,22 @@ export default function PhoneScroll() {
     <section
       id="top"
       ref={sectionRef}
-      style={{ "--p": 0 } as CSSProperties}
       className="phone-vars relative isolate overflow-x-clip"
     >
       {/* Phone track: the phone sticks while the text scrolls over it */}
       <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="sticky top-0 flex h-svh items-start justify-center pt-[5.25rem] md:items-center md:pt-16">
+        <div
+          ref={stageRef}
+          className="sticky top-0 flex h-svh items-start justify-center pt-[5.25rem] md:items-center md:pt-16"
+        >
           <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_45%,rgba(139,31,224,0.30),transparent_70%)]" />
-          <div className="flex flex-col items-center">
-            <Phone activeScreen={activeScreen} />
-            <p className="mt-4 hidden text-center text-[11px] uppercase tracking-[0.2em] text-muted md:block">
-              App preview · sample data
-            </p>
+          <div className="phone-shift" data-shifted={active > 0}>
+            <Phone
+              activeScreen={activeScreen}
+              rotatorRef={rotatorRef}
+              glareRef={glareRef}
+            />
           </div>
-          <p className="absolute inset-x-0 top-[4.4rem] text-center text-[10px] uppercase tracking-[0.2em] text-muted md:hidden">
-            App preview · sample data
-          </p>
         </div>
       </div>
 
@@ -315,11 +391,9 @@ export default function PhoneScroll() {
             ref={(el) => {
               beatRefs.current[i] = el;
             }}
-            className={`flex min-h-svh items-end pb-5 md:min-h-[85svh] md:items-center md:pb-0 ${
-              b.side === "left" ? "md:justify-start" : "md:justify-end"
-            }`}
+            className="flex min-h-svh items-end pb-5 md:min-h-[85svh] md:items-center md:justify-start md:pb-0"
           >
-            <BeatText beat={b} active={i === active} />
+            <BeatText beat={b} active={i === active} shifted={i > 0} />
           </div>
         ))}
       </div>
