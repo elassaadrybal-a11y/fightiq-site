@@ -10,33 +10,44 @@ const MODEL_URL = "/models/glove.glb";
 const MODEL_ROTATION: [number, number, number] = [0, 0, 0];
 
 const GLOVE_SIZE = 0.55; // share of the screen width the glove fills
-const GLOVE_COLOR = "#2b1748"; // matt dark purple
+const GLOVE_COLOR = "#170c28"; // very dark matt purple
 
 const FONT_URL = "/fonts/inter-latin-600-normal.woff";
 const FONT_SIZE = 0.095;
 const TEXT_RADIUS = 1.2; // distance of the text from the glove centre
-const LINE_TOP = 0.19;
 const LINE_GAP = 0.145;
-const STAGGER = 0.06; // seconds between letters
-const CHAR_DUR = 1.0; // seconds per letter animation
-const FADE_OUT_SPEED = 1.4; // higher = text leaves faster
-const FACING = 0.85; // how directly a phrase must face you before it appears
+const LINE_INDENT = 0.05; // second line shifts slightly right
+// First-line height of each phrase on the glove (glove is about 2.8 tall, centred on 0)
+const PHRASE_HEIGHTS = [0.55, 0.0, 0.4, -0.25];
+
+const STAGGER = 0.05; // seconds between letters
+const CHAR_DUR = 0.7; // seconds for each letter to settle
+const RISE = 0.22; // how high a letter starts before dropping into place
+const WRITE_AT = 0.7; // phrase starts writing when it faces you this directly
+const RESET_AT = -0.5; // phrase resets once it is this far round the back
+
+// Must match OUTRO_START in GloveFeatures.tsx
+const OUTRO_START = 0.86; // share of the section used for the full turn
 const SMOOTHING = 3.5; // lower = glove follows scroll more lazily
 
 const PURPLE = "#a855f7";
 const MAGENTA = "#d946ef";
 
 type NumRef = { current: number };
-type Glyph = { ch: string; angle: number; y: number; order: number };
+type Glyph = { ch: string; angle: number; y: number; order: number; indent: number };
 type PhraseLayout = { base: number; glyphs: Glyph[]; duration: number };
 type TroikaText = THREE.Mesh & { fillOpacity: number };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+const smoothstep = (a: number, b: number, v: number) => {
+  const t = clamp((v - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
 
 function makeMatte() {
   const m = new THREE.MeshStandardMaterial({
     color: GLOVE_COLOR,
-    roughness: 0.9,
+    roughness: 0.85,
     metalness: 0,
     side: THREE.DoubleSide,
   });
@@ -132,18 +143,20 @@ function useAdvances(phrases: string[][]) {
 
 function layoutPhrases(phrases: string[][], adv: Record<string, number>): PhraseLayout[] {
   return phrases.map((lines, pi) => {
-    const base = (pi * Math.PI) / 2;
+    const base = (pi * Math.PI * 2) / phrases.length;
+    const top = PHRASE_HEIGHTS[pi % PHRASE_HEIGHTS.length];
     const glyphs: Glyph[] = [];
     let order = 0;
     lines.forEach((line, li) => {
       const chars = Array.from(line);
       const widths = chars.map((c) => (adv[c] ?? 0.55) * FONT_SIZE);
       const total = widths.reduce((a, b) => a + b, 0);
-      let x = -total / 2;
+      const indent = li > 0 ? LINE_INDENT : 0;
+      let x = -total / 2 + indent;
       chars.forEach((ch, ci) => {
         const w = widths[ci];
         if (ch !== " ") {
-          glyphs.push({ ch, angle: base + (x + w / 2) / TEXT_RADIUS, y: LINE_TOP - li * LINE_GAP, order });
+          glyphs.push({ ch, angle: base + (x + w / 2) / TEXT_RADIUS, y: top - li * LINE_GAP, order, indent });
           order += 1;
         }
         x += w;
@@ -151,16 +164,6 @@ function layoutPhrases(phrases: string[][], adv: Record<string, number>): Phrase
     });
     return { base, glyphs, duration: Math.max(0, order - 1) * STAGGER + CHAR_DUR };
   });
-}
-
-// Holds on each phrase, then turns quickly to the next
-function stepRotation(q: number, count: number) {
-  if (count < 2) return 0;
-  const s = q * (count - 1);
-  const i = Math.min(Math.floor(s), count - 2);
-  const f = s - i;
-  const t = clamp((f - 0.3) / 0.4, 0, 1);
-  return -(i + t * t * (3 - 2 * t)) * (Math.PI / 2);
 }
 
 function GloveRig({ progress, phrases }: { progress: NumRef; phrases: string[][] }) {
@@ -177,18 +180,26 @@ function GloveRig({ progress, phrases }: { progress: NumRef; phrases: string[][]
     if (!g) return;
     const t = state.clock.elapsedTime;
     const k = 1 - Math.exp(-delta * SMOOTHING);
+    const p = progress.current;
 
-    const q = clamp((progress.current - 0.06) / 0.88, 0, 1);
-    const targetRotY = stepRotation(q, phrases.length);
-    g.rotation.y += (targetRotY - g.rotation.y) * k;
-    g.rotation.x = 0.08 + Math.sin(t * 0.7) * 0.03;
-    g.position.y = Math.sin(t * 1.2) * 0.03 * scale;
+    // One smooth full turn, then the outro
+    const q = clamp(p / OUTRO_START, 0, 1);
+    const outro = smoothstep(OUTRO_START, 1, p);
+    g.rotation.y += (-q * Math.PI * 2 - g.rotation.y) * k;
+    g.rotation.x = 0.06 + Math.sin(t * 0.7) * 0.02;
+    g.scale.setScalar(scale * (1 - 0.28 * outro));
+    g.position.y = Math.sin(t * 1.2) * 0.03 * scale - outro * viewport.height * 0.04;
 
     if (!layout) return;
+    const canWrite = p > 0.01; // wait until the glove has settled in the middle
     layout.forEach((ph, pi) => {
-      const on = Math.cos(g.rotation.y + ph.base) > FACING;
-      const next = clamp((phase.current[pi] ?? 0) + delta * (on ? 1 : -FADE_OUT_SPEED), 0, ph.duration);
+      const facing = Math.cos(g.rotation.y + ph.base);
+      let next = phase.current[pi] ?? 0;
+      if (canWrite && facing > WRITE_AT) next += delta;
+      else if (facing < RESET_AT) next -= delta * 3;
+      next = clamp(next, 0, ph.duration);
       phase.current[pi] = next;
+
       const row = glyphRefs.current[pi];
       if (!row) return;
       ph.glyphs.forEach((gl, gi) => {
@@ -196,11 +207,14 @@ function GloveRig({ progress, phrases }: { progress: NumRef; phrases: string[][]
         if (!m) return;
         const raw = clamp((next - gl.order * STAGGER) / CHAR_DUR, 0, 1);
         const e = 1 - Math.pow(1 - raw, 3);
-        m.visible = e > 0.001;
-        m.fillOpacity = e;
-        m.position.y = gl.y + (1 - e) * 0.18;
-        m.rotation.z = (1 - e) * (gl.order % 2 ? 0.45 : -0.45);
-        m.scale.setScalar(0.6 + 0.4 * e);
+        // Letters going round the side get hidden, like print on fabric
+        const side = smoothstep(-0.05, 0.3, Math.cos(g.rotation.y + gl.angle));
+        const alpha = e * side * (1 - outro);
+        m.visible = alpha > 0.002;
+        m.fillOpacity = alpha;
+        m.position.x = (1 - e) * 0.05;
+        m.position.y = gl.y + (1 - e) * RISE;
+        m.scale.setScalar(0.35 + 0.65 * e);
       });
     });
   });
@@ -258,10 +272,10 @@ export default function GloveCanvas({
       camera={{ position: [0, 0, 8], fov: 35 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
     >
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[3, 4, 5]} intensity={1.2} />
-      <pointLight position={[-3, 1, -2]} intensity={45} color={PURPLE} distance={12} />
-      <pointLight position={[3, -2, -1]} intensity={35} color={MAGENTA} distance={12} />
+      <ambientLight intensity={0.3} />
+      <directionalLight position={[3, 4, 5]} intensity={1.1} />
+      <pointLight position={[-3, 1, -2]} intensity={50} color={PURPLE} distance={12} />
+      <pointLight position={[3, -2, -1]} intensity={40} color={MAGENTA} distance={12} />
       <pointLight position={[0, 0, 4]} intensity={8} color="#c4b5fd" distance={10} />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={2} color="#ffffff" position={[0, 4, 4]} scale={[6, 2, 1]} />
