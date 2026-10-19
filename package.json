@@ -17,6 +17,7 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@fontsource/inter": "^5.3.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
