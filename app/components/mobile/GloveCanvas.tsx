@@ -10,7 +10,7 @@ const MODEL_URL = "/models/glove.glb";
 const MODEL_ROTATION: [number, number, number] = [0, 0, 0];
 
 const GLOVE_SIZE = 0.55; // share of the screen width the glove fills
-const GLOVE_COLOR = "#170c28"; // very dark matt purple
+const GLOVE_COLOR = "#24104a"; // dark purple
 
 const FONT_URL = "/fonts/inter-latin-600-normal.woff";
 const FONT_SIZE = 0.095;
@@ -44,20 +44,38 @@ const smoothstep = (a: number, b: number, v: number) => {
   return t * t * (3 - 2 * t);
 };
 
+const RIM_COLOR = "#c084fc"; // glow around the glove's edges
+const RIM_STRENGTH = 1.4; // higher = stronger edge glow
+
 function makeMatte() {
-  const m = new THREE.MeshStandardMaterial({
+  const m = new THREE.MeshPhysicalMaterial({
     color: GLOVE_COLOR,
-    roughness: 0.85,
-    metalness: 0,
+    roughness: 0.32,
+    metalness: 0.15,
+    clearcoat: 1,
+    clearcoatRoughness: 0.15,
+    sheen: 0.8,
+    sheenColor: new THREE.Color(PURPLE),
+    emissive: new THREE.Color("#5b21b6"),
+    emissiveIntensity: 0.25,
     side: THREE.DoubleSide,
   });
-  // The scan's triangles don't all face the same way. Draw both sides, and keep the
-  // scan's own normals instead of flipping them for triangles that look back-facing.
+  // Keep the scan's own normals (its triangles don't all face the same way),
+  // and add a glow that is strongest at the glove's outline.
   m.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      "#include <normal_fragment_begin>",
-      THREE.ShaderChunk.normal_fragment_begin.split("normal *= faceDirection;").join("")
-    );
+    shader.uniforms.rimColor = { value: new THREE.Color(RIM_COLOR) };
+    shader.uniforms.rimStrength = { value: RIM_STRENGTH };
+    shader.fragmentShader =
+      "uniform vec3 rimColor;\nuniform float rimStrength;\n" +
+      shader.fragmentShader
+        .replace(
+          "#include <normal_fragment_begin>",
+          THREE.ShaderChunk.normal_fragment_begin.split("normal *= faceDirection;").join("")
+        )
+        .replace(
+          "#include <emissivemap_fragment>",
+          "#include <emissivemap_fragment>\nfloat fiqRim = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 2.5);\ntotalEmissiveRadiance += rimColor * fiqRim * rimStrength;"
+        );
   };
   return m;
 }

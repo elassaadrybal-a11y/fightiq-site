@@ -91,16 +91,6 @@ const rowClass =
   "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 export default function MobileLanding() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  // iOS only autoplays when muted is set on the element itself
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = true;
-    v.play().catch(() => {});
-  }, []);
-
   return (
     <div className="bg-black text-white">
       <MobileHeader />
@@ -110,20 +100,11 @@ export default function MobileLanding() {
         <div
           aria-hidden="true"
           className="absolute inset-0"
-          style={{ background: `radial-gradient(ellipse at 50% 35%, ${ACCENT}40, transparent 65%)` }}
+          style={{
+            background: `radial-gradient(120% 65% at 50% 0%, ${ACCENT}66 0%, #3b076499 38%, transparent 72%), radial-gradient(70% 45% at 90% 75%, ${ACCENT}26 0%, transparent 70%), radial-gradient(60% 40% at 5% 55%, #6d28d933 0%, transparent 70%), #000`,
+          }}
         />
-        <video
-          ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover"
-          src="/hero/hero-loop.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          aria-hidden="true"
-        />
-        <div aria-hidden="true" className="absolute inset-0 bg-linear-to-b from-black/50 via-black/30 to-black" />
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-b from-transparent to-black" />
 
         <div className="relative">
           <h1 className="text-[clamp(3.2rem,16vw,4.75rem)] font-bold leading-[0.95] tracking-tight">
