@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
   type RefObject,
 } from "react";
 
@@ -13,6 +14,7 @@ const DEFAULT_SCREEN = "/screens/dashboard.png";
 const LAYERS = 20;
 
 type Beat = {
+  side: "left" | "right";
   kicker: string;
   title: string;
   text: string;
@@ -24,22 +26,26 @@ type Beat = {
 // for example screen: "/screens/scanner.png".
 const beats: Beat[] = [
   {
+    side: "left",
     kicker: "AI boxing analysis",
     title: "Your sparring, watched like a coach saw every second.",
     text: "Upload your footage. Get a breakdown of your habits, openings and drills in minutes.",
     cta: true,
   },
   {
+    side: "right",
     kicker: "Sparring analysis",
     title: "See the patterns you can't feel mid-round.",
     text: "Strengths, recurring habits and drills pulled from your own footage.",
   },
   {
+    side: "left",
     kicker: "Opponent scanner",
     title: "Scout your next opponent.",
     text: "Tendencies, openings and a game plan to train against.",
   },
   {
+    side: "right",
     kicker: "Training score",
     title: "Show up, log it, watch it add up.",
     text: "A score and streaks that reward consistency, plus team leaderboards.",
@@ -48,22 +54,22 @@ const beats: Beat[] = [
 
 const screens = Array.from(new Set(beats.map((b) => b.screen ?? DEFAULT_SCREEN)));
 
-// One pose per text block: angles in degrees, x is the sideways shift
-// (0 = centred, 1 = full shift to the right), s is scale.
-type Pose = { ry: number; rx: number; rz: number; x: number; s: number };
+// One pose per text block, in degrees. The first pose matches the starting
+// angles in globals.css so there's no jump when the page loads.
+type Pose = { ry: number; rx: number; rz: number };
 
 const POSES_DESKTOP: Pose[] = [
-  { ry: -32, rx: 10, rz: -4, x: 0, s: 1 },
-  { ry: -20, rx: 6, rz: -3, x: 1, s: 1.02 },
-  { ry: -8, rx: 3, rz: -1, x: 1, s: 1.04 },
-  { ry: 10, rx: 2, rz: 2, x: 1, s: 1.02 },
+  { ry: -32, rx: 10, rz: -4 },
+  { ry: -12, rx: 5, rz: -2 },
+  { ry: 10, rx: 3, rz: 1 },
+  { ry: 30, rx: 2, rz: 3 },
 ];
 
 const POSES_MOBILE: Pose[] = [
-  { ry: -22, rx: 8, rz: -3, x: 0, s: 1 },
-  { ry: -14, rx: 5, rz: -2, x: 1, s: 1 },
-  { ry: -5, rx: 3, rz: -1, x: 1, s: 1 },
-  { ry: 8, rx: 2, rz: 1, x: 1, s: 1 },
+  { ry: -22, rx: 8, rz: -3 },
+  { ry: -8, rx: 4, rz: -1 },
+  { ry: 8, rx: 3, rz: 1 },
+  { ry: 20, rx: 2, rz: 2 },
 ];
 
 const INITIAL_TRANSFORM =
@@ -78,8 +84,6 @@ const mix = (a: Pose, b: Pose, g: number): Pose => ({
   ry: a.ry + (b.ry - a.ry) * g,
   rx: a.rx + (b.rx - a.rx) * g,
   rz: a.rz + (b.rz - a.rz) * g,
-  x: a.x + (b.x - a.x) * g,
-  s: a.s + (b.s - a.s) * g,
 });
 
 function subscribeReducedMotion(callback: () => void) {
@@ -96,20 +100,110 @@ function getServerReducedMotion() {
   return false;
 }
 
-const RIM_BACKGROUND =
-  "linear-gradient(90deg, #8a8697 0%, #3a3745 14%, #2a2833 50%, #3a3745 86%, #8a8697 100%)";
+// Glossy black body: a highlight at the top and bottom of the side wall,
+// darker toward the middle, with lighter rim and band layers.
 const BODY_BACKGROUND =
-  "linear-gradient(90deg, #5a5668 0%, #24222c 14%, #1a1822 50%, #24222c 86%, #5a5668 100%)";
+  "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, transparent 10%, transparent 90%, rgba(255,255,255,0.08) 100%), linear-gradient(90deg, #000000 0%, #26252e 7%, #08080b 22%, #040406 50%, #08080b 78%, #26252e 93%, #000000 100%)";
+const RIM_BACKGROUND =
+  "linear-gradient(90deg, #6d6a7a 0%, #2c2a35 14%, #17161d 50%, #2c2a35 86%, #6d6a7a 100%)";
+const BAND_BACKGROUND =
+  "linear-gradient(90deg, #4d4a59 0%, #1c1b23 50%, #4d4a59 100%)";
+const BUTTON_BACKGROUND =
+  "linear-gradient(180deg, #4b4958 0%, #17161d 20%, #0a0a0e 50%, #17161d 80%, #3a3844 100%)";
+const BUTTON_CAP = "#2a2833";
+
+// Positions and heights as a fraction of the phone's height
+const BUTTONS = [
+  { side: "left", top: 0.17, height: 0.035 },
+  { side: "left", top: 0.235, height: 0.07 },
+  { side: "left", top: 0.325, height: 0.07 },
+  { side: "right", top: 0.28, height: 0.105 },
+] as const;
+
+function SideButton({
+  side,
+  top,
+  height,
+}: {
+  side: "left" | "right";
+  top: number;
+  height: number;
+}) {
+  const D = "calc(var(--depth) * 0.42)";
+  const face: CSSProperties = {
+    position: "absolute",
+    background: BUTTON_BACKGROUND,
+    backfaceVisibility: "hidden",
+    borderRadius: "calc(var(--w) * 0.006)",
+  };
+  const cap: CSSProperties = { ...face, background: BUTTON_CAP };
+  const outerX =
+    side === "left" ? `calc(${D} / -2)` : `calc(100% - ${D} / 2)`;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: `${top * 100}%`,
+        height: `calc(var(--w) * 2.1667 * ${height})`,
+        width: "calc(var(--w) * 0.02)",
+        ...(side === "left"
+          ? { left: "calc(var(--w) * -0.016)" }
+          : { right: "calc(var(--w) * -0.016)" }),
+        transformStyle: "preserve-3d",
+      }}
+    >
+      <div
+        style={{ ...face, inset: 0, transform: `translateZ(calc(${D} / 2))` }}
+      />
+      <div
+        style={{
+          ...face,
+          inset: 0,
+          transform: `translateZ(calc(${D} / -2)) rotateY(180deg)`,
+        }}
+      />
+      <div
+        style={{
+          ...face,
+          top: 0,
+          height: "100%",
+          width: D,
+          left: outerX,
+          transform: side === "left" ? "rotateY(-90deg)" : "rotateY(90deg)",
+        }}
+      />
+      <div
+        style={{
+          ...cap,
+          left: 0,
+          width: "100%",
+          height: D,
+          top: `calc(${D} / -2)`,
+          transform: "rotateX(90deg)",
+        }}
+      />
+      <div
+        style={{
+          ...cap,
+          left: 0,
+          width: "100%",
+          height: D,
+          top: `calc(100% - ${D} / 2)`,
+          transform: "rotateX(-90deg)",
+        }}
+      />
+    </div>
+  );
+}
 
 function Phone({
   activeScreen,
-  shifterRef,
   rotatorRef,
   glareRef,
   staticTransform,
 }: {
   activeScreen: string;
-  shifterRef?: RefObject<HTMLDivElement | null>;
   rotatorRef?: RefObject<HTMLDivElement | null>;
   glareRef?: RefObject<HTMLDivElement | null>;
   staticTransform?: string;
@@ -118,13 +212,11 @@ function Phone({
 
   return (
     <div
-      ref={shifterRef}
       style={{
         position: "relative",
         width: "var(--w)",
         height: "calc(var(--w) * 2.1667)",
         perspective: "var(--persp)",
-        willChange: "transform",
       }}
     >
       {/* Soft glow on the ground under the phone */}
@@ -150,53 +242,30 @@ function Phone({
         }}
       >
         {/* Body: stacked layers give the phone its thickness */}
-        {Array.from({ length: LAYERS }, (_, i) => (
-          <div
-            key={i}
-            className="absolute inset-0"
-            style={{
-              borderRadius: radius,
-              transform: `translateZ(calc((${i} - ${(LAYERS - 1) / 2}) * var(--depth) / ${LAYERS - 1}))`,
-              background:
-                i === 0 || i === LAYERS - 1 ? RIM_BACKGROUND : BODY_BACKGROUND,
-            }}
-          />
-        ))}
+        {Array.from({ length: LAYERS }, (_, i) => {
+          const isRim = i === 0 || i === LAYERS - 1;
+          const isBand = i === LAYERS / 2 - 1 || i === LAYERS / 2;
+          return (
+            <div
+              key={i}
+              className="absolute inset-0"
+              style={{
+                borderRadius: radius,
+                transform: `translateZ(calc((${i} - ${(LAYERS - 1) / 2}) * var(--depth) / ${LAYERS - 1}))`,
+                background: isRim
+                  ? RIM_BACKGROUND
+                  : isBand
+                    ? BAND_BACKGROUND
+                    : BODY_BACKGROUND,
+              }}
+            />
+          );
+        })}
 
         {/* Side buttons */}
-        <div
-          className="absolute"
-          style={{
-            left: "calc(var(--w) * -0.011)",
-            top: "19%",
-            width: "calc(var(--w) * 0.013)",
-            height: "4%",
-            borderRadius: 2,
-            background: "#4a4757",
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            left: "calc(var(--w) * -0.011)",
-            top: "26%",
-            width: "calc(var(--w) * 0.013)",
-            height: "8%",
-            borderRadius: 2,
-            background: "#4a4757",
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            right: "calc(var(--w) * -0.011)",
-            top: "28%",
-            width: "calc(var(--w) * 0.013)",
-            height: "11%",
-            borderRadius: 2,
-            background: "#4a4757",
-          }}
-        />
+        {BUTTONS.map((b) => (
+          <SideButton key={`${b.side}-${b.top}`} {...b} />
+        ))}
 
         {/* Back */}
         <div
@@ -206,7 +275,7 @@ function Phone({
             transform:
               "translateZ(calc(var(--depth) / -2 - 1.5px)) rotateY(180deg)",
             backfaceVisibility: "hidden",
-            background: "linear-gradient(135deg, #2a2833, #14121a)",
+            background: "linear-gradient(135deg, #1b1a22, #050507)",
           }}
         />
 
@@ -217,8 +286,9 @@ function Phone({
             borderRadius: radius,
             transform: "translateZ(calc(var(--depth) / 2 + 1.5px))",
             backfaceVisibility: "hidden",
-            background: "#0b0a0f",
-            boxShadow: "inset 0 0 0 calc(var(--w) * 0.012) #3a3745",
+            background: "#000000",
+            boxShadow:
+              "inset 0 0 0 calc(var(--w) * 0.012) #0e0d12, inset 0 0 0 calc(var(--w) * 0.014) #2c2b35",
           }}
         >
           <div
@@ -246,7 +316,7 @@ function Phone({
               className="pointer-events-none absolute inset-0"
               style={{
                 background:
-                  "linear-gradient(120deg, rgba(255,255,255,0.14), transparent 38%)",
+                  "linear-gradient(120deg, rgba(255,255,255,0.18), transparent 40%)",
               }}
             />
           </div>
@@ -256,23 +326,19 @@ function Phone({
   );
 }
 
-function BeatText({
-  beat,
-  active,
-  shifted,
-}: {
-  beat: Beat;
-  active: boolean;
-  shifted: boolean;
-}) {
+function BeatText({ beat, active }: { beat: Beat; active: boolean }) {
   const Heading = beat.cta ? "h1" : "h2";
   return (
-    <div className={`beat-side w-full ${shifted ? "beat-shifted" : ""}`}>
+    <div
+      className={`beat-side w-full transition-opacity duration-500 ${
+        active ? "md:opacity-100" : "md:opacity-30"
+      }`}
+    >
       <div
-        className={`beat-card flex flex-col items-center text-center transition-all duration-700 ease-out md:items-start md:text-left ${
-          active
-            ? "translate-x-0 opacity-100"
-            : "-translate-x-8 opacity-0 md:-translate-x-6 md:opacity-25"
+        className={`beat-card flex flex-col items-center text-center ${
+          beat.side === "left"
+            ? "md:items-end md:text-right"
+            : "md:items-start md:text-left"
         }`}
       >
         <p className="text-xs uppercase tracking-[0.25em] text-accent-glow">
@@ -285,7 +351,7 @@ function BeatText({
           {beat.text}
         </p>
         {beat.cta && (
-          <div className="mt-5 flex flex-wrap justify-center gap-3 md:mt-6 md:justify-start">
+          <div className="mt-5 flex flex-wrap justify-center gap-3 md:mt-6 md:justify-end">
             <a
               href="#products"
               className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-glow"
@@ -308,7 +374,6 @@ function BeatText({
 export default function PhoneScroll() {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const shifterRef = useRef<HTMLDivElement>(null);
   const rotatorRef = useRef<HTMLDivElement>(null);
   const glareRef = useRef<HTMLDivElement>(null);
   const beatRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -324,25 +389,24 @@ export default function PhoneScroll() {
     const section = sectionRef.current;
     if (!section) return;
 
-    let target: Pose = POSES_DESKTOP[0];
-    const current: Pose = { ...POSES_DESKTOP[0] };
+    const startPose = (
+      window.innerWidth < 768 ? POSES_MOBILE : POSES_DESKTOP
+    )[0];
+    const current: Pose = { ...startPose };
+    let target: Pose = { ...startPose };
     let tickFrame = 0;
     let updateFrame = 0;
 
     const apply = (pose: Pose) => {
       const rotator = rotatorRef.current;
       if (rotator) {
-        rotator.style.transform = `rotateY(${pose.ry}deg) rotateX(${pose.rx}deg) rotateZ(${pose.rz}deg) scale(${pose.s})`;
-      }
-      const shifter = shifterRef.current;
-      if (shifter) {
-        shifter.style.transform = `translate3d(calc(var(--shift) * ${pose.x}), 0px, 0px)`;
+        rotator.style.transform = `rotateY(${pose.ry}deg) rotateX(${pose.rx}deg) rotateZ(${pose.rz}deg)`;
       }
       const glare = glareRef.current;
       if (glare) {
         glare.style.background = `linear-gradient(${
           120 - pose.ry * 1.2
-        }deg, rgba(255,255,255,0.14), transparent 38%)`;
+        }deg, rgba(255,255,255,0.18), transparent 40%)`;
       }
     };
 
@@ -412,6 +476,7 @@ export default function PhoneScroll() {
       });
     };
 
+    apply(current);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
@@ -455,7 +520,7 @@ export default function PhoneScroll() {
       ref={sectionRef}
       className="phone-vars relative isolate overflow-x-clip"
     >
-      {/* Phone track: the phone sticks while the text scrolls over it */}
+      {/* Phone track: the phone sticks in the middle while the text scrolls */}
       <div className="pointer-events-none absolute inset-0 z-10">
         <div
           ref={stageRef}
@@ -464,7 +529,6 @@ export default function PhoneScroll() {
           <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_45%,rgba(139,31,224,0.30),transparent_70%)]" />
           <Phone
             activeScreen={activeScreen}
-            shifterRef={shifterRef}
             rotatorRef={rotatorRef}
             glareRef={glareRef}
           />
@@ -479,9 +543,11 @@ export default function PhoneScroll() {
             ref={(el) => {
               beatRefs.current[i] = el;
             }}
-            className="flex min-h-svh items-end pb-5 md:min-h-[85svh] md:items-center md:justify-start md:pb-0"
+            className={`flex min-h-svh items-end pb-5 md:min-h-[85svh] md:items-center md:pb-0 ${
+              b.side === "left" ? "md:justify-start" : "md:justify-end"
+            }`}
           >
-            <BeatText beat={b} active={i === active} shifted={i > 0} />
+            <BeatText beat={b} active={i === active} />
           </div>
         ))}
       </div>
