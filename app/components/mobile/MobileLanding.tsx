@@ -3,48 +3,13 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import MobileHeader from "./MobileHeader";
-import PhoneFrame from "./PhoneFrame";
 import ScrollWords from "./ScrollWords";
+import GloveFeatures from "./GloveFeatures";
 
 const ACCENT = "#a855f7";
 
 const STORY =
   "Hours of sparring footage sit on your phone, unwatched. Meanwhile the same mistakes follow you from one round to the next. It's time to fight smarter.";
-
-const FEATURES = [
-  {
-    src: "/screens/sparring-upload.png",
-    alt: "Fight IQ sparring upload screen",
-    label: "Sparring Analysis",
-    title: "Every round, broken down",
-    body: "Upload a spar and Fight IQ shows you what you threw, what landed and where you left yourself open, so you know exactly what to work on next.",
-    glow: "#a855f7",
-  },
-  {
-    src: "/screens/scanner.png",
-    alt: "Fight IQ opponent scanner screen",
-    label: "Opponent Scan",
-    title: "Know them before the bell",
-    body: "Run an opponent's footage through the scanner to see their habits, favourite combinations and openings before you share a ring with them.",
-    glow: "#6366f1",
-  },
-  {
-    src: "/screens/dashboard.png",
-    alt: "Fight IQ dashboard with training score",
-    label: "Training Score",
-    title: "Every session counts",
-    body: "Log your training and get a score for each session, so you can see whether the work is actually adding up.",
-    glow: "#ec4899",
-  },
-  {
-    src: "/screens/profile.png",
-    alt: "Fight IQ profile screen",
-    label: "Your Profile",
-    title: "Your game, in one place",
-    body: "Your history, scores and analyses live together, so you can follow how your game develops over time.",
-    glow: "#8b5cf6",
-  },
-];
 
 const GLOW_ROW_1 = ["#a855f7", "#ec4899", "#3b82f6", "#f59e0b"];
 const GLOW_ROW_2 = ["#10b981", "#ef4444", "#06b6d4", "#f97316"];
@@ -197,21 +162,8 @@ export default function MobileLanding() {
       {/* Scroll-highlighted statement */}
       <ScrollWords text={STORY} />
 
-      {/* Phone feature blocks */}
-      <section className="space-y-32 px-6 py-16">
-        {FEATURES.map((f) => (
-          <div key={f.src} className="text-center">
-            <Reveal>
-              <PhoneFrame src={f.src} alt={f.alt} glow={f.glow} />
-            </Reveal>
-            <Reveal className="mt-14">
-              <Chip>{f.label}</Chip>
-              <h2 className="mt-5 text-[clamp(2.2rem,10vw,3rem)] font-semibold leading-tight tracking-tight">{f.title}</h2>
-              <p className="mx-auto mt-4 max-w-sm text-lg leading-relaxed text-white/65">{f.body}</p>
-            </Reveal>
-          </div>
-        ))}
-      </section>
+      {/* 3D glove with feature texts */}
+      <GloveFeatures />
 
       {/* Glow carousel (content to come) */}
       <section className="py-20">
