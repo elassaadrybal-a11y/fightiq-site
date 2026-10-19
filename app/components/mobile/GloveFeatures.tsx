@@ -13,18 +13,12 @@ const PHRASES: string[][] = [
   ["Log every session,", "get a score"],
 ];
 
-// How fast the glove moves up the screen compared with your scroll.
-// Lower = it stays on screen longer. Must stay above about 1.6 at h-[500svh].
-const GLOVE_SPEED = 1.75;
-
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 export default function GloveFeatures() {
   const sectionRef = useRef<HTMLElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
   const progress = useRef(0);
-  const offset = useRef(0);
   const [active, setActive] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -42,22 +36,9 @@ export default function GloveFeatures() {
     if (!el || !sticky) return;
     const update = () => {
       const rect = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const ch = sticky.offsetHeight;
-      const p = clamp01((vh - rect.top) / (rect.height + vh));
-      progress.current = p;
-
-      // Where the canvas sits on screen right now
-      const canvasTop = rect.top > 0 ? rect.top : Math.min(0, rect.bottom - ch);
-      // Where the glove should be on screen: crosses the middle halfway through
-      const gloveCenter = vh * (0.5 - GLOVE_SPEED * (p - 0.5));
-      // Offset from the canvas centre, as a fraction of its height (up = positive)
-      const off = (ch / 2 - (gloveCenter - canvasTop)) / ch;
-      offset.current = off;
-
-      if (glowRef.current) {
-        glowRef.current.style.transform = `translate(-50%, -50%) translateY(${-off * ch}px)`;
-      }
+      const range = rect.height - sticky.offsetHeight;
+      // 0 when the glove settles in the middle, 1 just before it scrolls away
+      progress.current = range > 0 ? clamp01(-rect.top / range) : 0;
     };
     update();
     window.addEventListener("scroll", update, { passive: true });
@@ -82,12 +63,11 @@ export default function GloveFeatures() {
       </ul>
       <div ref={stickyRef} aria-hidden="true" className="pointer-events-none sticky top-0 h-[100svh]">
         <div
-          ref={glowRef}
-          className="absolute left-1/2 top-1/2 h-[80vw] w-[80vw] rounded-full blur-3xl"
-          style={{ transform: "translate(-50%, -50%)", background: "radial-gradient(closest-side, #a855f740, transparent)" }}
+          className="absolute left-1/2 top-1/2 h-[95vw] w-[95vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+          style={{ background: "radial-gradient(closest-side, #a855f733, transparent)" }}
         />
         <div className="absolute inset-0">
-          {isMobile && <GloveCanvas progress={progress} offset={offset} active={active} phrases={PHRASES} />}
+          {isMobile && <GloveCanvas progress={progress} active={active} phrases={PHRASES} />}
         </div>
       </div>
     </section>

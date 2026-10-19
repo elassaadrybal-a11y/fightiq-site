@@ -9,11 +9,14 @@ const MODEL_URL = "/models/glove.glb";
 // If the model loads sideways or facing away, adjust these (radians, e.g. Math.PI / 2)
 const MODEL_ROTATION: [number, number, number] = [0, 0, 0];
 
+const GLOVE_SIZE = 0.55; // share of the screen width the glove fills
+const GLOVE_COLOR = "#2b1748"; // matt dark purple
+
 const FONT_URL = "/fonts/inter-latin-600-normal.woff";
-const FONT_SIZE = 0.14;
-const TEXT_RADIUS = 1.25; // distance of the text from the glove centre
-const LINE_TOP = 0.28;
-const LINE_GAP = 0.21;
+const FONT_SIZE = 0.095;
+const TEXT_RADIUS = 1.2; // distance of the text from the glove centre
+const LINE_TOP = 0.19;
+const LINE_GAP = 0.145;
 const STAGGER = 0.06; // seconds between letters
 const CHAR_DUR = 1.0; // seconds per letter animation
 const FADE_OUT_SPEED = 1.4; // higher = text leaves faster
@@ -30,6 +33,10 @@ type TroikaText = THREE.Mesh & { fillOpacity: number };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
+function makeMatte() {
+  return new THREE.MeshStandardMaterial({ color: GLOVE_COLOR, roughness: 0.9, metalness: 0 });
+}
+
 class Boundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
@@ -41,31 +48,19 @@ class Boundary extends Component<{ children: ReactNode; fallback: ReactNode }, {
 }
 
 function ProceduralGlove() {
-  const leather = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: "#0c0a12",
-        roughness: 0.38,
-        metalness: 0.1,
-        clearcoat: 1,
-        clearcoatRoughness: 0.25,
-        sheen: 0.6,
-        sheenColor: new THREE.Color(PURPLE),
-      }),
-    []
-  );
+  const matte = useMemo(makeMatte, []);
   return (
     <group position={[0, -0.1, 0]}>
-      <mesh material={leather} position={[0, 0.45, 0]} scale={[1, 1.12, 0.92]}>
+      <mesh material={matte} position={[0, 0.45, 0]} scale={[1, 1.12, 0.92]}>
         <sphereGeometry args={[1, 64, 64]} />
       </mesh>
-      <mesh material={leather} position={[0, 1.0, 0.28]} scale={[0.94, 0.58, 0.78]}>
+      <mesh material={matte} position={[0, 1.0, 0.28]} scale={[0.94, 0.58, 0.78]}>
         <sphereGeometry args={[1, 64, 64]} />
       </mesh>
-      <mesh material={leather} position={[0.78, 0.3, 0.42]} rotation={[0.5, 0, -0.55]}>
+      <mesh material={matte} position={[0.78, 0.3, 0.42]} rotation={[0.5, 0, -0.55]}>
         <capsuleGeometry args={[0.27, 0.62, 12, 32]} />
       </mesh>
-      <mesh material={leather} position={[0, -0.75, 0]}>
+      <mesh material={matte} position={[0, -0.75, 0]}>
         <cylinderGeometry args={[0.74, 0.68, 1.15, 64]} />
       </mesh>
     </group>
@@ -78,22 +73,10 @@ function ModelGlove({ url }: { url: string }) {
     const s = scene.clone(true);
     s.rotation.set(...MODEL_ROTATION);
     s.updateMatrixWorld(true);
+    const matte = makeMatte();
     s.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      const src = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as THREE.MeshStandardMaterial;
-      mesh.material = new THREE.MeshPhysicalMaterial({
-        color: "#0c0a12",
-        roughness: 0.38,
-        metalness: 0.1,
-        clearcoat: 1,
-        clearcoatRoughness: 0.25,
-        sheen: 0.6,
-        sheenColor: new THREE.Color(PURPLE),
-        normalMap: src?.normalMap ?? null,
-        roughnessMap: src?.roughnessMap ?? null,
-        aoMap: src?.aoMap ?? null,
-      });
+      if (mesh.isMesh) mesh.material = matte;
     });
     const box = new THREE.Box3().setFromObject(s);
     const size = box.getSize(new THREE.Vector3());
@@ -156,12 +139,22 @@ function layoutPhrases(phrases: string[][], adv: Record<string, number>): Phrase
   });
 }
 
-function GloveRig({ progress, offset, phrases }: { progress: NumRef; offset: NumRef; phrases: string[][] }) {
+// Holds on each phrase, then turns quickly to the next
+function stepRotation(q: number, count: number) {
+  if (count < 2) return 0;
+  const s = q * (count - 1);
+  const i = Math.min(Math.floor(s), count - 2);
+  const f = s - i;
+  const t = clamp((f - 0.3) / 0.4, 0, 1);
+  return -(i + t * t * (3 - 2 * t)) * (Math.PI / 2);
+}
+
+function GloveRig({ progress, phrases }: { progress: NumRef; phrases: string[][] }) {
   const group = useRef<THREE.Group>(null);
   const glyphRefs = useRef<(TroikaText | null)[][]>([]);
   const phase = useRef<number[]>([]);
   const viewport = useThree((s) => s.viewport);
-  const scale = viewport.width * 0.37;
+  const scale = Math.min(viewport.width * GLOVE_SIZE, viewport.height * 0.3);
   const adv = useAdvances(phrases);
   const layout = useMemo(() => (adv ? layoutPhrases(phrases, adv) : null), [adv, phrases]);
 
@@ -170,17 +163,12 @@ function GloveRig({ progress, offset, phrases }: { progress: NumRef; offset: Num
     if (!g) return;
     const t = state.clock.elapsedTime;
     const k = 1 - Math.exp(-delta * SMOOTHING);
-    const p = progress.current;
 
-    // One full turn while the glove is on screen; each phrase gets a quarter
-    const q = clamp((p - 0.24) / 0.52, 0, 1);
-    const targetRotY = -(q - 0.125) * Math.PI * 2;
+    const q = clamp((progress.current - 0.06) / 0.88, 0, 1);
+    const targetRotY = stepRotation(q, phrases.length);
     g.rotation.y += (targetRotY - g.rotation.y) * k;
     g.rotation.x = 0.08 + Math.sin(t * 0.7) * 0.03;
-
-    // Position comes from the page scroll, plus a gentle float
-    const targetY = offset.current * viewport.height + Math.sin(t * 1.2) * 0.04 * scale;
-    g.position.y += (targetY - g.position.y) * (1 - Math.exp(-delta * 12));
+    g.position.y = Math.sin(t * 1.2) * 0.03 * scale;
 
     if (!layout) return;
     layout.forEach((ph, pi) => {
@@ -196,7 +184,7 @@ function GloveRig({ progress, offset, phrases }: { progress: NumRef; offset: Num
         const e = 1 - Math.pow(1 - raw, 3);
         m.visible = e > 0.001;
         m.fillOpacity = e;
-        m.position.y = gl.y + (1 - e) * 0.25;
+        m.position.y = gl.y + (1 - e) * 0.18;
         m.rotation.z = (1 - e) * (gl.order % 2 ? 0.45 : -0.45);
         m.scale.setScalar(0.6 + 0.4 * e);
       });
@@ -242,12 +230,10 @@ function GloveRig({ progress, offset, phrases }: { progress: NumRef; offset: Num
 
 export default function GloveCanvas({
   progress,
-  offset,
   active,
   phrases,
 }: {
   progress: NumRef;
-  offset: NumRef;
   active: boolean;
   phrases: string[][];
 }) {
@@ -258,17 +244,17 @@ export default function GloveCanvas({
       camera={{ position: [0, 0, 8], fov: 35 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
     >
-      <ambientLight intensity={0.25} />
-      <directionalLight position={[3, 4, 5]} intensity={1.4} />
-      <pointLight position={[-3, 1, -2]} intensity={40} color={PURPLE} distance={12} />
-      <pointLight position={[3, -2, -1]} intensity={30} color={MAGENTA} distance={12} />
-      <pointLight position={[0, 0, 4]} intensity={6} color="#c4b5fd" distance={10} />
+      <ambientLight intensity={0.35} />
+      <directionalLight position={[3, 4, 5]} intensity={1.2} />
+      <pointLight position={[-3, 1, -2]} intensity={45} color={PURPLE} distance={12} />
+      <pointLight position={[3, -2, -1]} intensity={35} color={MAGENTA} distance={12} />
+      <pointLight position={[0, 0, 4]} intensity={8} color="#c4b5fd" distance={10} />
       <Environment resolution={256}>
-        <Lightformer form="rect" intensity={3} color="#ffffff" position={[0, 4, 4]} scale={[6, 2, 1]} />
-        <Lightformer form="rect" intensity={4} color={PURPLE} position={[-4, 0, 2]} rotation-y={Math.PI / 2} scale={[4, 6, 1]} />
-        <Lightformer form="rect" intensity={3} color={MAGENTA} position={[4, -1, 1]} rotation-y={-Math.PI / 2} scale={[4, 6, 1]} />
+        <Lightformer form="rect" intensity={2} color="#ffffff" position={[0, 4, 4]} scale={[6, 2, 1]} />
+        <Lightformer form="rect" intensity={3} color={PURPLE} position={[-4, 0, 2]} rotation-y={Math.PI / 2} scale={[4, 6, 1]} />
+        <Lightformer form="rect" intensity={2} color={MAGENTA} position={[4, -1, 1]} rotation-y={-Math.PI / 2} scale={[4, 6, 1]} />
       </Environment>
-      <GloveRig progress={progress} offset={offset} phrases={phrases} />
+      <GloveRig progress={progress} phrases={phrases} />
     </Canvas>
   );
 }
