@@ -1,5 +1,5 @@
 import PhoneScroll from "./components/PhoneScroll";
-import MobileShowcase from "./components/MobileShowcase";
+import MobileLanding from "./components/mobile/MobileLanding";
 import SiteHeader from "./components/SiteHeader";
 import { site } from "./site";
 
@@ -54,14 +54,16 @@ const faqs = [
 export default function Home() {
   return (
     <>
-      <SiteHeader />
+      <div className="hidden md:block">
+        <SiteHeader />
+      </div>
       <main>
         <div id="top">
           <div className="hidden md:block">
             <PhoneScroll />
           </div>
           <div className="md:hidden">
-            <MobileShowcase />
+            <MobileLanding />
           </div>
         </div>
 
