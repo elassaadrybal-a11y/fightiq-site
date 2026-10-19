@@ -37,18 +37,21 @@ const beats: Beat[] = [
     kicker: "Sparring analysis",
     title: "See the patterns you can't feel mid-round.",
     text: "Strengths, recurring habits and drills pulled from your own footage.",
+    screen: "/screens/sparring-upload.png",
   },
   {
     side: "left",
     kicker: "Opponent scanner",
     title: "Scout your next opponent.",
     text: "Tendencies, openings and a game plan to train against.",
+    screen: "/screens/scanner.png",
   },
   {
     side: "right",
     kicker: "Training score",
     title: "Show up, log it, watch it add up.",
     text: "A score and streaks that reward consistency, plus team leaderboards.",
+    screen: "/screens/profile.png",
   },
 ];
 
@@ -294,6 +297,7 @@ function Phone({
                 alt={src === activeScreen ? "Fight IQ app preview" : ""}
                 fill
                 priority={i === 0}
+                loading="eager"
                 sizes="(max-width: 768px) 70vw, 340px"
                 className={`object-cover object-top transition-opacity duration-500 ${
                   src === activeScreen ? "opacity-100" : "opacity-0"
