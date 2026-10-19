@@ -1,4 +1,5 @@
 import PhoneScroll from "./components/PhoneScroll";
+import MobileShowcase from "./components/MobileShowcase";
 import SiteHeader from "./components/SiteHeader";
 import { site } from "./site";
 
@@ -55,7 +56,14 @@ export default function Home() {
     <>
       <SiteHeader />
       <main>
-        <PhoneScroll />
+        <div id="top">
+          <div className="hidden md:block">
+            <PhoneScroll />
+          </div>
+          <div className="md:hidden">
+            <MobileShowcase />
+          </div>
+        </div>
 
         <section id="products" className="mx-auto max-w-5xl px-6 py-20">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">

@@ -483,7 +483,7 @@ export default function PhoneScroll() {
 
   if (reduced) {
     return (
-      <section id="top" className="relative overflow-hidden pb-20 pt-28">
+      <section className="relative overflow-hidden pb-20 pt-28">
         <div className="phone-vars mx-auto flex max-w-3xl flex-col items-center gap-12 px-6">
           <Phone
             activeScreen={DEFAULT_SCREEN}
@@ -509,7 +509,6 @@ export default function PhoneScroll() {
 
   return (
     <section
-      id="top"
       ref={sectionRef}
       className="phone-vars relative isolate overflow-x-clip"
     >
