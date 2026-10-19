@@ -36,7 +36,7 @@ body {
 
 /* Phone size, tilt and sideways shift. Mobile first, desktop overrides below. */
 .phone-vars {
-  --w: min(68vw, calc((100svh - 5.25rem) * 0.37));
+  --w: min(78vw, calc((100svh - 5.25rem) * 0.42));
   --depth: calc(var(--w) * 0.11);
   --shift: 11vw;
   --persp: 1100px;
@@ -58,7 +58,7 @@ body {
 
 @media (min-width: 768px) {
   .phone-vars {
-    --w: min(22vw, 30svh);
+    --w: min(27vw, 36svh);
     --shift: 16vw;
     --persp: 1400px;
     --ry0: -32deg;

@@ -103,14 +103,14 @@ function getServerReducedMotion() {
 // Glossy black body: a highlight at the top and bottom of the side wall,
 // darker toward the middle, with lighter rim and band layers.
 const BODY_BACKGROUND =
-  "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, transparent 10%, transparent 90%, rgba(255,255,255,0.08) 100%), linear-gradient(90deg, #000000 0%, #26252e 7%, #08080b 22%, #040406 50%, #08080b 78%, #26252e 93%, #000000 100%)";
+  "linear-gradient(90deg, #18171d 0%, #1f1e25 50%, #18171d 100%)";
 const RIM_BACKGROUND =
-  "linear-gradient(90deg, #6d6a7a 0%, #2c2a35 14%, #17161d 50%, #2c2a35 86%, #6d6a7a 100%)";
+  "linear-gradient(90deg, #2c2b33 0%, #22212a 50%, #2c2b33 100%)";
 const BAND_BACKGROUND =
-  "linear-gradient(90deg, #4d4a59 0%, #1c1b23 50%, #4d4a59 100%)";
+  "linear-gradient(90deg, #26252d 0%, #1c1b22 50%, #26252d 100%)";
 const BUTTON_BACKGROUND =
-  "linear-gradient(180deg, #4b4958 0%, #17161d 20%, #0a0a0e 50%, #17161d 80%, #3a3844 100%)";
-const BUTTON_CAP = "#2a2833";
+  "linear-gradient(180deg, #2b2a32 0%, #1e1d24 50%, #2b2a32 100%)";
+const BUTTON_CAP = "#2d2c35";
 
 // Positions and heights as a fraction of the phone's height
 const BUTTONS = [
@@ -219,17 +219,6 @@ function Phone({
         perspective: "var(--persp)",
       }}
     >
-      {/* Soft glow on the ground under the phone */}
-      <div
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-        style={{
-          bottom: "calc(var(--w) * -0.1)",
-          width: "calc(var(--w) * 0.9)",
-          height: "calc(var(--w) * 0.14)",
-          background:
-            "radial-gradient(ellipse at center, rgba(139,31,224,0.40), transparent 70%)",
-        }}
-      />
 
       <div
         ref={rotatorRef}
@@ -275,7 +264,7 @@ function Phone({
             transform:
               "translateZ(calc(var(--depth) / -2 - 1.5px)) rotateY(180deg)",
             backfaceVisibility: "hidden",
-            background: "linear-gradient(135deg, #1b1a22, #050507)",
+            background: "linear-gradient(135deg, #1c1b22, #111016)",
           }}
         />
 
@@ -288,7 +277,7 @@ function Phone({
             backfaceVisibility: "hidden",
             background: "#000000",
             boxShadow:
-              "inset 0 0 0 calc(var(--w) * 0.012) #0e0d12, inset 0 0 0 calc(var(--w) * 0.014) #2c2b35",
+              "inset 0 0 0 calc(var(--w) * 0.012) #0e0d12, inset 0 0 0 calc(var(--w) * 0.014) #1f1e26",
           }}
         >
           <div
@@ -344,7 +333,7 @@ function BeatText({ beat, active }: { beat: Beat; active: boolean }) {
         <p className="text-xs uppercase tracking-[0.25em] text-accent-glow">
           {beat.kicker}
         </p>
-        <Heading className="mt-3 text-2xl font-semibold leading-[1.1] tracking-tight md:text-4xl lg:text-5xl">
+        <Heading className="mt-3 text-2xl font-semibold leading-[1.1] tracking-tight md:text-4xl lg:text-4xl">
           {beat.title}
         </Heading>
         <p className="mt-3 max-w-sm text-sm text-[#b9b6c4] md:mt-4 md:text-base md:text-muted">
