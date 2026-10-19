@@ -10,21 +10,23 @@ const MODEL_URL = "/models/glove.glb";
 const MODEL_ROTATION: [number, number, number] = [0, 0, 0];
 
 const FONT_URL = "/fonts/inter-latin-600-normal.woff";
-const FONT_SIZE = 0.18;
+const FONT_SIZE = 0.14;
 const TEXT_RADIUS = 1.25; // distance of the text from the glove centre
-const LINE_TOP = 0.32;
-const LINE_GAP = 0.26;
-const STAGGER = 0.028; // seconds between letters
-const CHAR_DUR = 0.55; // seconds per letter animation
+const LINE_TOP = 0.28;
+const LINE_GAP = 0.21;
+const STAGGER = 0.06; // seconds between letters
+const CHAR_DUR = 1.0; // seconds per letter animation
+const FADE_OUT_SPEED = 1.4; // higher = text leaves faster
 const FACING = 0.85; // how directly a phrase must face you before it appears
+const SMOOTHING = 3.5; // lower = glove follows scroll more lazily
 
 const PURPLE = "#a855f7";
 const MAGENTA = "#d946ef";
 
-type Progress = { current: number };
+type NumRef = { current: number };
 type Glyph = { ch: string; angle: number; y: number; order: number };
 type PhraseLayout = { base: number; glyphs: Glyph[]; duration: number };
-type TroikaText = THREE.Mesh & { fillOpacity: number; outlineOpacity: number };
+type TroikaText = THREE.Mesh & { fillOpacity: number };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -38,10 +40,10 @@ class Boundary extends Component<{ children: ReactNode; fallback: ReactNode }, {
   }
 }
 
-function useGloveMaterials() {
-  return useMemo(
-    () => ({
-      leather: new THREE.MeshPhysicalMaterial({
+function ProceduralGlove() {
+  const leather = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
         color: "#0c0a12",
         roughness: 0.38,
         metalness: 0.1,
@@ -50,42 +52,21 @@ function useGloveMaterials() {
         sheen: 0.6,
         sheenColor: new THREE.Color(PURPLE),
       }),
-      glow: new THREE.MeshStandardMaterial({
-        color: PURPLE,
-        emissive: new THREE.Color(PURPLE),
-        emissiveIntensity: 2.2,
-        roughness: 0.3,
-      }),
-      trim: new THREE.MeshPhysicalMaterial({ color: "#1a1324", roughness: 0.5, clearcoat: 0.6 }),
-    }),
     []
   );
-}
-
-function ProceduralGlove() {
-  const m = useGloveMaterials();
   return (
     <group position={[0, -0.1, 0]}>
-      <mesh material={m.leather} position={[0, 0.45, 0]} scale={[1, 1.12, 0.92]}>
+      <mesh material={leather} position={[0, 0.45, 0]} scale={[1, 1.12, 0.92]}>
         <sphereGeometry args={[1, 64, 64]} />
       </mesh>
-      <mesh material={m.leather} position={[0, 1.0, 0.28]} scale={[0.94, 0.58, 0.78]}>
+      <mesh material={leather} position={[0, 1.0, 0.28]} scale={[0.94, 0.58, 0.78]}>
         <sphereGeometry args={[1, 64, 64]} />
       </mesh>
-      <mesh material={m.leather} position={[0.78, 0.3, 0.42]} rotation={[0.5, 0, -0.55]}>
+      <mesh material={leather} position={[0.78, 0.3, 0.42]} rotation={[0.5, 0, -0.55]}>
         <capsuleGeometry args={[0.27, 0.62, 12, 32]} />
       </mesh>
-      <mesh material={m.leather} position={[0, -0.75, 0]}>
+      <mesh material={leather} position={[0, -0.75, 0]}>
         <cylinderGeometry args={[0.74, 0.68, 1.15, 64]} />
-      </mesh>
-      <mesh material={m.glow} position={[0, -0.32, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.76, 0.045, 16, 96]} />
-      </mesh>
-      <mesh material={m.glow} position={[0, -1.32, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.69, 0.05, 16, 96]} />
-      </mesh>
-      <mesh material={m.trim} position={[0, -0.8, 0.66]}>
-        <boxGeometry args={[0.9, 0.42, 0.12]} />
       </mesh>
     </group>
   );
@@ -175,7 +156,7 @@ function layoutPhrases(phrases: string[][], adv: Record<string, number>): Phrase
   });
 }
 
-function GloveRig({ progress, phrases }: { progress: Progress; phrases: string[][] }) {
+function GloveRig({ progress, offset, phrases }: { progress: NumRef; offset: NumRef; phrases: string[][] }) {
   const group = useRef<THREE.Group>(null);
   const glyphRefs = useRef<(TroikaText | null)[][]>([]);
   const phase = useRef<number[]>([]);
@@ -188,23 +169,23 @@ function GloveRig({ progress, phrases }: { progress: Progress; phrases: string[]
     const g = group.current;
     if (!g) return;
     const t = state.clock.elapsedTime;
-    const k = 1 - Math.exp(-delta * 6);
+    const k = 1 - Math.exp(-delta * SMOOTHING);
     const p = progress.current;
 
     // One full turn while the glove is on screen; each phrase gets a quarter
-    const q = clamp((p - 0.22) / 0.56, 0, 1);
+    const q = clamp((p - 0.24) / 0.52, 0, 1);
     const targetRotY = -(q - 0.125) * Math.PI * 2;
     g.rotation.y += (targetRotY - g.rotation.y) * k;
     g.rotation.x = 0.08 + Math.sin(t * 0.7) * 0.03;
 
-    // Drift down slightly slower than the page, plus a gentle float
-    const targetY = (0.5 - p) * viewport.height * 0.4 + Math.sin(t * 1.2) * 0.04 * scale;
-    g.position.y += (targetY - g.position.y) * k;
+    // Position comes from the page scroll, plus a gentle float
+    const targetY = offset.current * viewport.height + Math.sin(t * 1.2) * 0.04 * scale;
+    g.position.y += (targetY - g.position.y) * (1 - Math.exp(-delta * 12));
 
     if (!layout) return;
     layout.forEach((ph, pi) => {
       const on = Math.cos(g.rotation.y + ph.base) > FACING;
-      const next = clamp((phase.current[pi] ?? 0) + delta * (on ? 1 : -1.8), 0, ph.duration);
+      const next = clamp((phase.current[pi] ?? 0) + delta * (on ? 1 : -FADE_OUT_SPEED), 0, ph.duration);
       phase.current[pi] = next;
       const row = glyphRefs.current[pi];
       if (!row) return;
@@ -215,9 +196,8 @@ function GloveRig({ progress, phrases }: { progress: Progress; phrases: string[]
         const e = 1 - Math.pow(1 - raw, 3);
         m.visible = e > 0.001;
         m.fillOpacity = e;
-        m.outlineOpacity = e * 0.6;
-        m.position.y = gl.y + (1 - e) * 0.3;
-        m.rotation.z = (1 - e) * (gl.order % 2 ? 0.5 : -0.5);
+        m.position.y = gl.y + (1 - e) * 0.25;
+        m.rotation.z = (1 - e) * (gl.order % 2 ? 0.45 : -0.45);
         m.scale.setScalar(0.6 + 0.4 * e);
       });
     });
@@ -245,12 +225,8 @@ function GloveRig({ progress, phrases }: { progress: Progress; phrases: string[]
                   position={[0, gl.y, TEXT_RADIUS]}
                   anchorX="center"
                   anchorY="middle"
-                  color="#f5f3ff"
+                  color="#ffffff"
                   fillOpacity={0}
-                  outlineWidth={0}
-                  outlineBlur="35%"
-                  outlineColor={PURPLE}
-                  outlineOpacity={0}
                   visible={false}
                 >
                   {gl.ch}
@@ -266,10 +242,12 @@ function GloveRig({ progress, phrases }: { progress: Progress; phrases: string[]
 
 export default function GloveCanvas({
   progress,
+  offset,
   active,
   phrases,
 }: {
-  progress: Progress;
+  progress: NumRef;
+  offset: NumRef;
   active: boolean;
   phrases: string[][];
 }) {
@@ -290,7 +268,7 @@ export default function GloveCanvas({
         <Lightformer form="rect" intensity={4} color={PURPLE} position={[-4, 0, 2]} rotation-y={Math.PI / 2} scale={[4, 6, 1]} />
         <Lightformer form="rect" intensity={3} color={MAGENTA} position={[4, -1, 1]} rotation-y={-Math.PI / 2} scale={[4, 6, 1]} />
       </Environment>
-      <GloveRig progress={progress} phrases={phrases} />
+      <GloveRig progress={progress} offset={offset} phrases={phrases} />
     </Canvas>
   );
 }
