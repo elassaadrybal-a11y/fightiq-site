@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 
 export default function ScrollWords({ text }: { text: string }) {
   const words = text.split(" ");
-  const ref = useRef<HTMLElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const el = sectionRef.current;
+    const inner = textRef.current;
+    if (!el || !inner) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setProgress(1);
       return;
@@ -18,8 +20,9 @@ export default function ScrollWords({ text }: { text: string }) {
     const update = () => {
       frame = 0;
       const rect = el.getBoundingClientRect();
-      const scrollable = rect.height - window.innerHeight;
-      const p = scrollable > 0 ? -rect.top / scrollable : 0;
+      const pinTop = parseFloat(getComputedStyle(inner).top) || 0;
+      const range = rect.height - inner.offsetHeight;
+      const p = range > 0 ? (pinTop - rect.top) / range : 0;
       setProgress(Math.min(1, Math.max(0, p)));
     };
     const onScroll = () => {
@@ -39,8 +42,8 @@ export default function ScrollWords({ text }: { text: string }) {
   const lit = Math.min(1, progress / 0.8) * words.length;
 
   return (
-    <section ref={ref} className="relative h-[260vh]">
-      <div className="sticky top-0 flex h-[100svh] items-center justify-center px-6">
+    <section ref={sectionRef} className="relative h-[200svh]">
+      <div ref={textRef} className="sticky top-[28svh] flex justify-center px-6 py-6">
         <p className="max-w-md text-center text-[clamp(2rem,9vw,2.6rem)] font-semibold leading-[1.15] tracking-tight text-white">
           {words.map((w, i) => {
             const amount = Math.min(1, Math.max(0, lit - i));

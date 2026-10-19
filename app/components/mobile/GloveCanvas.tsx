@@ -34,7 +34,21 @@ type TroikaText = THREE.Mesh & { fillOpacity: number };
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 function makeMatte() {
-  return new THREE.MeshStandardMaterial({ color: GLOVE_COLOR, roughness: 0.9, metalness: 0 });
+  const m = new THREE.MeshStandardMaterial({
+    color: GLOVE_COLOR,
+    roughness: 0.9,
+    metalness: 0,
+    side: THREE.DoubleSide,
+  });
+  // The scan's triangles don't all face the same way. Draw both sides, and keep the
+  // scan's own normals instead of flipping them for triangles that look back-facing.
+  m.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <normal_fragment_begin>",
+      THREE.ShaderChunk.normal_fragment_begin.split("normal *= faceDirection;").join("")
+    );
+  };
+  return m;
 }
 
 class Boundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {

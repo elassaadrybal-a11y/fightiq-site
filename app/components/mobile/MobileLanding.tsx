@@ -106,7 +106,7 @@ export default function MobileLanding() {
       <MobileHeader />
 
       {/* Hero */}
-      <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-32 text-center">
+      <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 pb-8 pt-32 text-center">
         <div
           aria-hidden="true"
           className="absolute inset-0"
@@ -148,7 +148,7 @@ export default function MobileLanding() {
       </section>
 
       {/* Trailer placeholder */}
-      <section id="m-trailer" className="scroll-mt-28 px-4 pb-16">
+      <section id="m-trailer" className="scroll-mt-28 px-4 pb-4">
         <div className="relative mx-auto flex aspect-video w-full max-w-xl items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-neutral-900">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/80">
             <svg width="20" height="22" viewBox="0 0 14 16" aria-hidden="true" className="ml-1">
@@ -166,7 +166,7 @@ export default function MobileLanding() {
       <GloveFeatures />
 
       {/* Glow carousel (content to come) */}
-      <section className="py-20">
+      <section className="py-12">
         <Reveal className="px-6 text-center">
           <Chip>Coming soon</Chip>
           <h2 className="mt-5 text-[clamp(2.2rem,10vw,3rem)] font-semibold leading-tight tracking-tight">More on the way</h2>
@@ -187,7 +187,7 @@ export default function MobileLanding() {
       </section>
 
       {/* Coming soon */}
-      <section className="px-6 py-24 text-center">
+      <section className="px-6 py-14 text-center">
         <Reveal>
           <h2 className="bg-linear-to-r from-[#c084fc] to-[#f472b6] bg-clip-text text-[clamp(2.6rem,12vw,3.5rem)] font-semibold leading-[1.05] tracking-tight text-transparent">
             Coming soon
@@ -204,7 +204,7 @@ export default function MobileLanding() {
       </section>
 
       {/* Honest numbers */}
-      <section className="px-6 py-16">
+      <section className="px-6 py-10">
         <Reveal className="text-center">
           <h2 className="text-[clamp(2.2rem,10vw,3rem)] font-semibold leading-tight tracking-tight">
             One app.
@@ -239,7 +239,7 @@ export default function MobileLanding() {
       </section>
 
       {/* Final CTA */}
-      <section className="px-6 pb-24 pt-20 text-center">
+      <section className="px-6 pb-16 pt-12 text-center">
         <Reveal>
           <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[1.6rem] border border-white/10 bg-neutral-900 shadow-[0_0_80px_rgba(168,85,247,0.35)]">
             <Image src="/logo-small.png" alt="" width={56} height={56} className="h-14 w-auto" />
