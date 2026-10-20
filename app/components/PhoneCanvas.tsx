@@ -27,43 +27,56 @@ function Phone({ poseRef, screens, activeScreen }: { poseRef: PoseRef; screens: 
   const shown = useRef(Math.max(0, screens.indexOf(activeScreen)));
   const fade = useRef(1);
 
-  const { model, screenMat, uvBox } = useMemo(() => {
+  const { model, screenMat, uvBox, channel } = useMemo(() => {
     const s = scene.clone(true);
     s.rotation.set(...MODEL_ROTATION);
     s.updateMatrixWorld(true);
 
+    // Find the display, and which texture coordinates its image used
     const found: THREE.Mesh[] = [];
+    let uvChannel = 0;
     s.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
       const mats = Array.isArray(m.material) ? m.material : [m.material];
-      if (mats.some((mt) => mt.name === SCREEN_MATERIAL)) found.push(m);
+      const hit = mats.find((mt) => mt.name === SCREEN_MATERIAL) as THREE.MeshStandardMaterial | undefined;
+      if (hit) {
+        found.push(m);
+        const tex = hit.emissiveMap ?? hit.map;
+        if (tex) uvChannel = tex.channel;
+      }
     });
 
-    // Which part of the texture the display actually uses
     const box = { uMin: 0, uMax: 1, vMin: 0, vMax: 1 };
-    const mat = new THREE.MeshBasicMaterial({ toneMapped: false });
-    const screenMesh = found[0];
-    if (screenMesh) {
-      const uv = screenMesh.geometry.getAttribute("uv");
-      if (uv) {
-        box.uMin = Infinity;
-        box.vMin = Infinity;
-        box.uMax = -Infinity;
-        box.vMax = -Infinity;
-        for (let i = 0; i < uv.count; i++) {
-          const u = uv.getX(i);
-          const v = uv.getY(i);
-          box.uMin = Math.min(box.uMin, u);
-          box.uMax = Math.max(box.uMax, u);
-          box.vMin = Math.min(box.vMin, v);
-          box.vMax = Math.max(box.vMax, v);
-        }
-      }
+    const mat = new THREE.MeshBasicMaterial({ toneMapped: false, side: THREE.DoubleSide });
+    const attrName = uvChannel === 0 ? "uv" : `uv${uvChannel}`;
+
+    if (found.length > 0) {
+      box.uMin = Infinity;
+      box.vMin = Infinity;
+      box.uMax = -Infinity;
+      box.vMax = -Infinity;
       found.forEach((m) => {
+        const uv = m.geometry.getAttribute(attrName) ?? m.geometry.getAttribute("uv");
+        if (uv) {
+          for (let i = 0; i < uv.count; i++) {
+            box.uMin = Math.min(box.uMin, uv.getX(i));
+            box.uMax = Math.max(box.uMax, uv.getX(i));
+            box.vMin = Math.min(box.vMin, uv.getY(i));
+            box.vMax = Math.max(box.vMax, uv.getY(i));
+          }
+        }
         m.material = mat;
       });
+      if (!(box.uMax > box.uMin) || !(box.vMax > box.vMin)) {
+        box.uMin = 0;
+        box.uMax = 1;
+        box.vMin = 0;
+        box.vMax = 1;
+      }
     }
+
+    console.info("[PhoneCanvas] screen meshes:", found.length, "uv set:", attrName, "uv box:", box);
 
     const size = new THREE.Box3().setFromObject(s).getSize(new THREE.Vector3());
     const center = new THREE.Box3().setFromObject(s).getCenter(new THREE.Vector3());
@@ -71,7 +84,7 @@ function Phone({ poseRef, screens, activeScreen }: { poseRef: PoseRef; screens: 
     const wrapper = new THREE.Group();
     wrapper.add(s);
     wrapper.scale.setScalar(1 / size.y);
-    return { model: wrapper, screenMat: mat, uvBox: box };
+    return { model: wrapper, screenMat: mat, uvBox: box, channel: uvChannel };
   }, [scene]);
 
   // Fit each screenshot exactly onto the display area
@@ -80,6 +93,7 @@ function Phone({ poseRef, screens, activeScreen }: { poseRef: PoseRef; screens: 
     const rv = 1 / (uvBox.vMax - uvBox.vMin);
     textures.forEach((t) => {
       t.flipY = false;
+      t.channel = channel;
       t.colorSpace = THREE.SRGBColorSpace;
       t.wrapS = THREE.ClampToEdgeWrapping;
       t.wrapT = THREE.ClampToEdgeWrapping;
@@ -90,7 +104,7 @@ function Phone({ poseRef, screens, activeScreen }: { poseRef: PoseRef; screens: 
     });
     screenMat.map = textures[shown.current] ?? textures[0];
     screenMat.needsUpdate = true;
-  }, [textures, uvBox, screenMat]);
+  }, [textures, uvBox, screenMat, channel]);
 
   useFrame((state, delta) => {
     const g = group.current;
