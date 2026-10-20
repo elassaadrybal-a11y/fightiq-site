@@ -162,7 +162,7 @@ export default function PhoneCanvas({
       <directionalLight position={[3, 4, 5]} intensity={1.4} />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={3} color="#ffffff" position={[0, 3, 4]} scale={[8, 2, 1]} />
-        <Lightformer form="rect" intensity={2} color="#ffffff" position={[-5, 0, 2]} rotation-y={Math.PI / 2} scale={[4, 8, 1]} />
+        <Lightformer form="rect" intensity={2} color="#a855f7" position={[-5, 0, 2]} rotation-y={Math.PI / 2} scale={[4, 8, 1]} />
         <Lightformer form="rect" intensity={1.5} color="#ffffff" position={[5, 0, 2]} rotation-y={-Math.PI / 2} scale={[4, 8, 1]} />
       </Environment>
       <Suspense fallback={null}>
