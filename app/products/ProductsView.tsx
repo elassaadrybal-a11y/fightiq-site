@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { site } from "../site";
+import { OpponentReport, SparringReport } from "./Reports";
 
 const ACCENT = "#a855f7";
 const notifyHref = `mailto:${site.contactEmail}?subject=Notify%20me%20when%20checkout%20opens`;
@@ -145,161 +146,25 @@ function ProductCard({ p, onSample }: { p: Product; onSample: (id: ProductId) =>
   );
 }
 
-/* ---------- Sample reports (placeholder content) ---------- */
+/* ---------- Report preview with "show more" ---------- */
 
-function ScoreRing({ value, label }: { value: number; label: string }) {
-  const r = 34;
-  const c = 2 * Math.PI * r;
+function ReportPreview({ children }: { children: ReactNode }) {
+  const [expanded, setExpanded] = useState(false);
   return (
-    <div className="relative h-28 w-28 shrink-0">
-      <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90" aria-hidden="true">
-        <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="7" />
-        <circle
-          cx="40"
-          cy="40"
-          r={r}
-          fill="none"
-          stroke={ACCENT}
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - value / 100)}
-          style={{ filter: `drop-shadow(0 0 6px ${ACCENT})` }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-semibold">{value}</span>
-        <span className="text-xs uppercase tracking-[0.2em] text-white/50">{label}</span>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-      <p className="text-xs uppercase tracking-[0.15em] text-white/45">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
-    </div>
-  );
-}
-
-function Block({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="border-t border-white/10 pt-6">
-      <h4 className="text-xs font-semibold uppercase tracking-[0.25em] text-[#c084fc]">{title}</h4>
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
-
-function List({ items, marker }: { items: string[]; marker: string }) {
-  return (
-    <ul className="space-y-3">
-      {items.map((it) => (
-        <li key={it} className="flex gap-3 text-white/85">
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white/70">
-            {marker}
-          </span>
-          <span className="leading-snug">{it}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function ReportShell({ title, meta, children }: { title: string; meta: string; children: ReactNode }) {
-  return (
-    <div
-      className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b0912] p-6"
-      style={{ boxShadow: `0 0 80px ${ACCENT}22` }}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-2xl font-semibold tracking-tight">{title}</h3>
-          <p className="mt-1 text-sm text-white/50">{meta}</p>
+    <div className="relative">
+      <div className={expanded ? "" : "max-h-[1100px] overflow-hidden"}>{children}</div>
+      {!expanded && (
+        <div className="absolute inset-x-0 bottom-0 flex h-48 items-end justify-center bg-linear-to-b from-transparent to-black pb-2">
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="flex h-12 items-center rounded-full bg-white px-7 text-base font-semibold text-black"
+          >
+            Show the full report
+          </button>
         </div>
-        <span className="shrink-0 rounded-full border border-[#c084fc]/40 bg-[#a855f7]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-[#c084fc]">
-          Sample
-        </span>
-      </div>
-      <div className="mt-6 space-y-6">{children}</div>
+      )}
     </div>
-  );
-}
-
-function SparringReport() {
-  const rounds = [
-    { name: "Round 1", value: 64 },
-    { name: "Round 2", value: 75 },
-    { name: "Round 3", value: 70 },
-  ];
-  return (
-    <ReportShell title="Sparring Analysis" meta="3 rounds · placeholder data">
-      <div className="flex items-center gap-5">
-        <ScoreRing value={72} label="Overall" />
-        <div className="grid flex-1 grid-cols-1 gap-2">
-          <Stat label="Punches thrown" value="214" />
-          <Stat label="Landed" value="38%" />
-        </div>
-      </div>
-      <Block title="Round by round">
-        <div className="space-y-3">
-          {rounds.map((r) => (
-            <div key={r.name}>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">{r.name}</span>
-                <span className="font-semibold">{r.value}</span>
-              </div>
-              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full" style={{ width: `${r.value}%`, background: ACCENT, boxShadow: `0 0 10px ${ACCENT}` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Block>
-      <Block title="Strengths">
-        <List marker="+" items={["Sharp, well-timed jab", "Good head movement on the counter", "Stays composed under pressure"]} />
-      </Block>
-      <Block title="Things to fix">
-        <List marker="!" items={["Right hand drops after the jab", "Backs straight up when pressured", "Output fades late in rounds"]} />
-      </Block>
-      <Block title="Drills for you">
-        <List marker="›" items={["Jab and return to guard, 3 x 3 min", "Pivot out off the ropes", "Late-round output intervals"]} />
-      </Block>
-    </ReportShell>
-  );
-}
-
-function OpponentReport() {
-  return (
-    <ReportShell title="Opponent Scan" meta="2 clips · placeholder data">
-      <div className="grid grid-cols-2 gap-2">
-        <Stat label="Stance" value="Orthodox" />
-        <Stat label="Style" value="Pressure" />
-      </div>
-      <Block title="Tendencies">
-        <div className="flex flex-wrap gap-2">
-          {["Leads with the jab", "Two-punch combos", "Circles to his left", "Slows down in round 3"].map((t) => (
-            <span key={t} className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-sm text-white/80">
-              {t}
-            </span>
-          ))}
-        </div>
-      </Block>
-      <Block title="Openings">
-        <List marker="+" items={["Left hand drops after the jab", "Chin stays high when coming forward", "Rarely defends the body"]} />
-      </Block>
-      <Block title="Game plan">
-        <List
-          marker="›"
-          items={["Round 1: stay long and make them lead", "Round 2: counter the jab with your right hand", "Round 3: go to the body as their pace drops"]}
-        />
-      </Block>
-      <Block title="Counters to drill">
-        <List marker="!" items={["Slip outside the jab, right hand over the top", "Catch and return the jab", "Pivot off the ropes under pressure"]} />
-      </Block>
-    </ReportShell>
   );
 }
 
@@ -358,7 +223,7 @@ export default function ProductsView() {
           <Chip>See what you get</Chip>
           <h2 className="mt-5 text-[clamp(2.2rem,10vw,3rem)] font-semibold leading-tight tracking-tight">The full report</h2>
           <p className="mx-auto mt-4 max-w-sm text-lg text-white/65">
-            This is the layout you get back. The content below is placeholder for now.
+            An example of each report, shown exactly as it appears in the app.
           </p>
         </Reveal>
 
@@ -379,7 +244,9 @@ export default function ProductsView() {
               </button>
             ))}
           </div>
-          <div className="mt-6">{tab === "sparring" ? <SparringReport /> : <OpponentReport />}</div>
+          <div className="mt-6">
+            <ReportPreview key={tab}>{tab === "sparring" ? <SparringReport /> : <OpponentReport />}</ReportPreview>
+          </div>
         </div>
       </section>
 
