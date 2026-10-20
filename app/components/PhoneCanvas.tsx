@@ -66,6 +66,10 @@ function Phone({ poseRef, screens, activeScreen }: { poseRef: PoseRef; screens: 
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
       const mats = Array.isArray(m.material) ? m.material : [m.material];
+      // Glass parts don't reflect the studio lights, so the edge around the display stays black
+      mats.forEach((mt) => {
+        if (mt.transparent && "envMapIntensity" in mt) (mt as THREE.MeshStandardMaterial).envMapIntensity = 0;
+      });
       if (mats.some((mt) => mt.name === SCREEN_MATERIAL)) {
         screenBox.union(new THREE.Box3().setFromObject(m));
         m.material = black;
