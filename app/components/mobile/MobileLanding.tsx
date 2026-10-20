@@ -5,14 +5,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import MobileHeader from "./MobileHeader";
 import ScrollWords from "./ScrollWords";
 import GloveFeatures from "./GloveFeatures";
+import BeltCarousel from "./BeltCarousel";
 
 const ACCENT = "#a855f7";
 
 const STORY =
   "Hours of sparring footage sit on your phone, unwatched. Meanwhile the same mistakes follow you from one round to the next. It's time to fight smarter.";
 
-const GLOW_ROW_1 = ["#a855f7", "#ec4899", "#3b82f6", "#f59e0b"];
-const GLOW_ROW_2 = ["#10b981", "#ef4444", "#06b6d4", "#f97316"];
 
 const STATS = [
   { big: "2", title: "Ways to analyse", body: "Your own sparring and your opponent's footage, in one app." },
@@ -67,28 +66,6 @@ function NotifyButton() {
     </a>
   );
 }
-
-function GlowCard({ color, label }: { color: string; label: string }) {
-  return (
-    <div
-      className="relative flex aspect-[4/5] w-[68vw] max-w-[300px] shrink-0 snap-center flex-col items-center justify-end overflow-hidden rounded-[2rem] border border-white/10 bg-[#07070c] pb-8"
-      style={{ backgroundImage: `radial-gradient(circle at 50% 42%, ${color}55 0%, transparent 62%)` }}
-    >
-      <div
-        aria-hidden="true"
-        className="absolute left-1/2 top-[42%] h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          background: `radial-gradient(circle at 35% 30%, #ffffffcc 0%, ${color} 38%, ${color}00 72%)`,
-          boxShadow: `0 0 70px 10px ${color}88`,
-        }}
-      />
-      <span className="relative text-lg text-white/80">{label}</span>
-    </div>
-  );
-}
-
-const rowClass =
-  "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 export default function MobileLanding() {
   return (
@@ -146,24 +123,17 @@ export default function MobileLanding() {
       {/* 3D glove with feature texts */}
       <GloveFeatures />
 
-      {/* Glow carousel (content to come) */}
+      {/* Belts (not in the app yet) */}
       <section className="py-12">
         <Reveal className="px-6 text-center">
           <Chip>Coming soon</Chip>
-          <h2 className="mt-5 text-[clamp(2.2rem,10vw,3rem)] font-semibold leading-tight tracking-tight">More on the way</h2>
-          <p className="mx-auto mt-4 max-w-sm text-lg text-white/65">{"We're building more for fighters. Here's a first look soon."}</p>
+          <h2 className="mt-5 text-[clamp(2.2rem,10vw,3rem)] font-semibold leading-tight tracking-tight">Earn your belts</h2>
+          <p className="mx-auto mt-4 max-w-sm text-lg text-white/65">
+            Hit milestones in your training and unlock championship belts, from gold to diamond.
+          </p>
         </Reveal>
-        <div className="mt-12 space-y-5">
-          <div className={`${rowClass} px-[16vw]`}>
-            {GLOW_ROW_1.map((c) => (
-              <GlowCard key={c} color={c} label="Coming soon" />
-            ))}
-          </div>
-          <div className={`${rowClass} px-[4vw]`}>
-            {GLOW_ROW_2.map((c) => (
-              <GlowCard key={c} color={c} label="Coming soon" />
-            ))}
-          </div>
+        <div className="mt-12">
+          <BeltCarousel />
         </div>
       </section>
 
