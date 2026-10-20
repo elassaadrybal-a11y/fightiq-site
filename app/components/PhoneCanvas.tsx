@@ -2,22 +2,46 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, useGLTF, useTexture } from "@react-three/drei";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 const MODEL_URL = "/models/iphone.glb";
 const SCREEN_MATERIAL = "FTRPXsQynaenYUI";
 // Turn the model if it loads facing away or sideways (radians, e.g. Math.PI)
 const MODEL_ROTATION: [number, number, number] = [0, Math.PI, 0];
-// Set to true if the screenshot shows upside down or mirrored
-const SCREEN_FLIP_Y = false;
-const SCREEN_FLIP_X = false;
 const PHONE_HEIGHT = 0.78; // share of the screen height the phone fills
+const SCREEN_RADIUS = 0.14; // display corner rounding, as a share of its width
+const SCREEN_INSET = 0; // shrink the screenshot inward if it covers the bezel (e.g. 0.01)
+const IMAGE_ASPECT = 1242 / 2688; // width / height of the screenshots
 
 export type Pose = { ry: number; rx: number; rz: number };
 type PoseRef = { current: Pose };
 
 const DEG = Math.PI / 180;
+
+function roundedScreen(w: number, h: number, r: number) {
+  const x = -w / 2;
+  const y = -h / 2;
+  const s = new THREE.Shape();
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y);
+  s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r);
+  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h);
+  s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r);
+  s.quadraticCurveTo(x, y, x + r, y);
+  const g = new THREE.ShapeGeometry(s, 16);
+  // Map the image across the whole shape (0 to 1 in both directions)
+  const pos = g.getAttribute("position");
+  const uv = g.getAttribute("uv");
+  for (let i = 0; i < pos.count; i++) {
+    uv.setXY(i, (pos.getX(i) - x) / w, (pos.getY(i) - y) / h);
+  }
+  uv.needsUpdate = true;
+  return g;
+}
 
 function Phone({ poseRef, screens, activeScreen }: { poseRef: PoseRef; screens: string[]; activeScreen: string }) {
   const { scene } = useGLTF(MODEL_URL);
@@ -27,84 +51,66 @@ function Phone({ poseRef, screens, activeScreen }: { poseRef: PoseRef; screens: 
   const shown = useRef(Math.max(0, screens.indexOf(activeScreen)));
   const fade = useRef(1);
 
-  const { model, screenMat, uvBox, channel } = useMemo(() => {
+  const { model, screenMat } = useMemo(() => {
     const s = scene.clone(true);
     s.rotation.set(...MODEL_ROTATION);
-    s.updateMatrixWorld(true);
+    const inner = new THREE.Group();
+    inner.add(s);
+    inner.updateMatrixWorld(true);
 
-    // Find the display, and which texture coordinates its image used
-    const found: THREE.Mesh[] = [];
-    let uvChannel = 0;
+    // Find the model's display and measure where it sits
+    const black = new THREE.MeshBasicMaterial({ color: "#000000" });
+    const screenBox = new THREE.Box3();
+    let found = 0;
     s.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
       const mats = Array.isArray(m.material) ? m.material : [m.material];
-      const hit = mats.find((mt) => mt.name === SCREEN_MATERIAL) as THREE.MeshStandardMaterial | undefined;
-      if (hit) {
-        found.push(m);
-        const tex = hit.emissiveMap ?? hit.map;
-        if (tex) uvChannel = tex.channel;
+      if (mats.some((mt) => mt.name === SCREEN_MATERIAL)) {
+        screenBox.union(new THREE.Box3().setFromObject(m));
+        m.material = black;
+        found += 1;
       }
     });
 
-    const box = { uMin: 0, uMax: 1, vMin: 0, vMax: 1 };
-    const mat = new THREE.MeshBasicMaterial({ toneMapped: false, side: THREE.DoubleSide });
-    const attrName = uvChannel === 0 ? "uv" : `uv${uvChannel}`;
+    const phoneBox = new THREE.Box3().setFromObject(inner);
+    const phoneSize = phoneBox.getSize(new THREE.Vector3());
+    const box = found > 0 ? screenBox : phoneBox;
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const w = size.x * (1 - SCREEN_INSET * 2);
+    const h = size.y * (1 - SCREEN_INSET * 2 * (size.x / size.y));
+    console.info("[PhoneCanvas] screen meshes:", found, "screen size:", size.x.toFixed(3), size.y.toFixed(3));
 
-    if (found.length > 0) {
-      box.uMin = Infinity;
-      box.vMin = Infinity;
-      box.uMax = -Infinity;
-      box.vMax = -Infinity;
-      found.forEach((m) => {
-        const uv = m.geometry.getAttribute(attrName) ?? m.geometry.getAttribute("uv");
-        if (uv) {
-          for (let i = 0; i < uv.count; i++) {
-            box.uMin = Math.min(box.uMin, uv.getX(i));
-            box.uMax = Math.max(box.uMax, uv.getX(i));
-            box.vMin = Math.min(box.vMin, uv.getY(i));
-            box.vMax = Math.max(box.vMax, uv.getY(i));
-          }
-        }
-        m.material = mat;
-      });
-      if (!(box.uMax > box.uMin) || !(box.vMax > box.vMin)) {
-        box.uMin = 0;
-        box.uMax = 1;
-        box.vMin = 0;
-        box.vMax = 1;
-      }
-    }
-
-    console.info("[PhoneCanvas] screen meshes:", found.length, "uv set:", attrName, "uv box:", box);
-
-    const size = new THREE.Box3().setFromObject(s).getSize(new THREE.Vector3());
-    const center = new THREE.Box3().setFromObject(s).getCenter(new THREE.Vector3());
-    s.position.sub(center);
-    const wrapper = new THREE.Group();
-    wrapper.add(s);
-    wrapper.scale.setScalar(1 / size.y);
-    return { model: wrapper, screenMat: mat, uvBox: box, channel: uvChannel };
-  }, [scene]);
-
-  // Fit each screenshot exactly onto the display area
-  useEffect(() => {
-    const ru = 1 / (uvBox.uMax - uvBox.uMin);
-    const rv = 1 / (uvBox.vMax - uvBox.vMin);
+    // Scale each screenshot to fill the display without stretching, aligned to the top
+    const planeAspect = w / h;
     textures.forEach((t) => {
-      t.flipY = false;
-      t.channel = channel;
       t.colorSpace = THREE.SRGBColorSpace;
-      t.wrapS = THREE.ClampToEdgeWrapping;
-      t.wrapT = THREE.ClampToEdgeWrapping;
       t.anisotropy = 8;
-      t.repeat.set(SCREEN_FLIP_X ? -ru : ru, SCREEN_FLIP_Y ? -rv : rv);
-      t.offset.set(SCREEN_FLIP_X ? uvBox.uMax * ru : -uvBox.uMin * ru, SCREEN_FLIP_Y ? uvBox.vMax * rv : -uvBox.vMin * rv);
+      if (planeAspect > IMAGE_ASPECT) {
+        const r = IMAGE_ASPECT / planeAspect;
+        t.repeat.set(1, r);
+        t.offset.set(0, 1 - r);
+      } else {
+        const r = planeAspect / IMAGE_ASPECT;
+        t.repeat.set(r, 1);
+        t.offset.set((1 - r) / 2, 0);
+      }
       t.needsUpdate = true;
     });
-    screenMat.map = textures[shown.current] ?? textures[0];
-    screenMat.needsUpdate = true;
-  }, [textures, uvBox, screenMat, channel]);
+
+    const mat = new THREE.MeshBasicMaterial({ map: textures[shown.current] ?? textures[0], toneMapped: false });
+    const screen = new THREE.Mesh(roundedScreen(w, h, w * SCREEN_RADIUS), mat);
+    screen.position.set(center.x, center.y, box.max.z + phoneSize.y * 0.0004);
+    inner.add(screen);
+
+    // Centre the phone and scale it to a height of 1
+    inner.position.sub(phoneBox.getCenter(new THREE.Vector3()));
+    const wrapper = new THREE.Group();
+    wrapper.add(inner);
+    wrapper.scale.setScalar(1 / phoneSize.y);
+    return { model: wrapper, screenMat: mat };
+  }, [scene, textures]);
 
   useFrame((state, delta) => {
     const g = group.current;
