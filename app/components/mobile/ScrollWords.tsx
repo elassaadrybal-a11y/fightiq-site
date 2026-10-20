@@ -44,7 +44,7 @@ export default function ScrollWords({ text }: { text: string }) {
   return (
     <section ref={sectionRef} className="relative h-[200svh]">
       <div ref={textRef} className="sticky top-[28svh] flex justify-center px-6 py-6">
-        <p className="max-w-md text-center text-[clamp(2rem,9vw,2.6rem)] font-semibold leading-[1.15] tracking-tight text-white">
+        <p className="max-w-md text-center text-[clamp(2rem,9vw,2.6rem)] md:max-w-3xl md:text-5xl font-semibold leading-[1.15] tracking-tight text-white">
           {words.map((w, i) => {
             const amount = Math.min(1, Math.max(0, lit - i));
             return (

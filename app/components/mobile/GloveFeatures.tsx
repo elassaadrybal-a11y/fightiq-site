@@ -25,15 +25,6 @@ export default function GloveFeatures() {
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const progress = useRef(0);
   const [active, setActive] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const sync = () => setIsMobile(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -78,7 +69,7 @@ export default function GloveFeatures() {
       </ul>
       <div ref={stickyRef} aria-hidden="true" className="pointer-events-none sticky top-0 h-[100svh] overflow-hidden">
         <div
-          className="absolute left-1/2 top-1/2 h-[95vw] w-[95vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+          className="absolute left-1/2 top-1/2 h-[min(95vw,820px)] w-[min(95vw,820px)] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
           style={{ background: "radial-gradient(closest-side, #a855f726, transparent)" }}
         />
         <div ref={markRef} className="absolute inset-0 flex flex-col justify-center gap-1 opacity-0">
@@ -95,7 +86,7 @@ export default function GloveFeatures() {
           ))}
         </div>
         <div className="absolute inset-0">
-          {isMobile && <GloveCanvas progress={progress} active={active} phrases={PHRASES} />}
+          <GloveCanvas progress={progress} active={active} phrases={PHRASES} />
         </div>
       </div>
     </section>
