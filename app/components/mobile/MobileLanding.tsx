@@ -6,6 +6,7 @@ import MobileHeader from "./MobileHeader";
 import ScrollWords from "./ScrollWords";
 import GloveFeatures from "./GloveFeatures";
 import BeltCarousel from "./BeltCarousel";
+import { site } from "../../site";
 
 const ACCENT = "#a855f7";
 
@@ -59,7 +60,7 @@ function Chip({ children }: { children: ReactNode }) {
 function NotifyButton() {
   return (
     <a
-      href="#notify"
+      href={`mailto:${site.contactEmail}?subject=Notify%20me%20about%20launch`}
       className="inline-flex h-14 items-center rounded-full bg-white px-9 text-lg font-semibold text-black shadow-[0_0_40px_rgba(168,85,247,0.35)]"
     >
       Get notified

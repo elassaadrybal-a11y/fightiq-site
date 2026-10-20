@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { site } from "../../site";
 
 const LINKS = [
-  { href: "#top", label: "Home" },
-  { href: "#products", label: "Products" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/", label: "Home" },
+  { href: "/products", label: "Products" },
 ];
+
+const notifyHref = `mailto:${site.contactEmail}?subject=Notify%20me%20about%20launch`;
 
 export default function MobileHeader() {
   const [open, setOpen] = useState(false);
@@ -27,10 +29,10 @@ export default function MobileHeader() {
     <header className="fixed inset-x-0 top-0 z-50 px-4 pt-[calc(env(safe-area-inset-top)+12px)] md:hidden">
       <div className="rounded-[28px] border border-white/10 bg-white/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between pl-5 pr-2">
-          <a href="#top" onClick={close} aria-label={`${site.name} home`} className="flex items-center">
+          <Link href="/" onClick={close} aria-label={`${site.name} home`} className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/fightiq-transparent.png" alt={site.name} className="h-7 w-auto" />
-          </a>
+          </Link>
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
@@ -50,11 +52,11 @@ export default function MobileHeader() {
         {open && (
           <nav id="mobile-menu" className="border-t border-white/10 px-3 pb-3 pt-2" aria-label="Mobile">
             {LINKS.map((l) => (
-              <a key={l.href} href={l.href} onClick={close} className="block rounded-2xl px-3 py-3 text-lg text-white/85 active:bg-white/10">
+              <Link key={l.href} href={l.href} onClick={close} className="block rounded-2xl px-3 py-3 text-lg text-white/85 active:bg-white/10">
                 {l.label}
-              </a>
+              </Link>
             ))}
-            <a href="#notify" onClick={close} className="mt-2 flex h-12 items-center justify-center rounded-full bg-white text-base font-semibold text-black">
+            <a href={notifyHref} onClick={close} className="mt-2 flex h-12 items-center justify-center rounded-full bg-white text-base font-semibold text-black">
               Get notified
             </a>
           </nav>

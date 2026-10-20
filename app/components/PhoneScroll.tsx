@@ -1,4 +1,5 @@
 "use client";
+import { site } from "../site";
 
 import Image from "next/image";
 import {
@@ -346,13 +347,13 @@ function BeatText({ beat, active }: { beat: Beat; active: boolean }) {
         {beat.cta && (
           <div className="mt-5 flex flex-wrap justify-center gap-3 md:mt-6 md:justify-end">
             <a
-              href="#products"
+              href="/products"
               className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-glow"
             >
               See what you get
             </a>
             <a
-              href="#notify"
+              href={`mailto:${site.contactEmail}?subject=Notify%20me%20about%20launch`}
               className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:bg-surface"
             >
               Get notified
