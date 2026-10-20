@@ -8,7 +8,7 @@ import * as THREE from "three";
 const MODEL_URL = "/models/iphone.glb";
 const SCREEN_MATERIAL = "FTRPXsQynaenYUI";
 // Turn the model if it loads facing away or sideways (radians, e.g. Math.PI)
-const MODEL_ROTATION: [number, number, number] = [0, 0, 0];
+const MODEL_ROTATION: [number, number, number] = [0, Math.PI, 0];
 // Set to true if the screenshot shows upside down or mirrored
 const SCREEN_FLIP_Y = false;
 const SCREEN_FLIP_X = false;

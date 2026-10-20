@@ -252,7 +252,7 @@ export default function PhoneScroll() {
   const activeScreen = beats[active].screen ?? DEFAULT_SCREEN;
 
   return (
-    <section ref={sectionRef} className="relative isolate overflow-x-clip">
+    <section ref={sectionRef} className="phone-vars relative isolate overflow-x-clip">
       {/* Phone track: the phone sticks in the middle while the text scrolls */}
       <div className="pointer-events-none absolute inset-0 z-10">
         <div ref={stageRef} className="sticky top-0 h-svh">
