@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { site } from "../site";
 import { OpponentReport, SparringReport } from "./Reports";
+import BuyButton from "./BuyButton";
 
 const ACCENT = "#a855f7";
 const notifyHref = `mailto:${site.contactEmail}?subject=Notify%20me%20when%20checkout%20opens`;
@@ -128,12 +129,7 @@ function ProductCard({ p, onSample }: { p: Product; onSample: (id: ProductId) =>
       </ul>
       <div className="mt-8 border-t border-white/10 pt-6">
         <p className="text-sm text-white/50">Price announced at launch</p>
-        <span
-          aria-disabled="true"
-          className="mt-3 flex h-14 w-full items-center justify-center rounded-full bg-white/10 text-base font-semibold text-white/50"
-        >
-          Checkout opens at launch
-        </span>
+        <BuyButton product={p.id} />
         <button
           type="button"
           onClick={() => onSample(p.id)}
