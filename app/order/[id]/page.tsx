@@ -75,7 +75,9 @@ export default function OrderPage({
 }) {
   return (
     <>
-      <MobileHeader />
+      <Suspense fallback={null}>
+        <MobileHeader />
+      </Suspense>
       <main className={`${display.variable} ${sans.variable} ${mono.variable} relative min-h-svh bg-black px-6 pb-20 pt-36 text-white`}>
         <div
           aria-hidden="true"
