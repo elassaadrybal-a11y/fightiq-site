@@ -12,7 +12,7 @@ export default function TheAppPage() {
   return (
     <>
       <MobileHeader />
-      <main>
+      <main className="bg-black">
         <div className="hidden md:block">
           <PhoneScroll />
         </div>

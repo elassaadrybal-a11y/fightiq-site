@@ -25,6 +25,12 @@ const SCREENS = [
     title: "Your game, in one place",
     text: "Your history, scores and reports live together, so you can follow your progress.",
   },
+  {
+    src: "/screens/leaderboard-teams.png",
+    label: "Leaderboard Teams",
+    title: "Train together, compete together",
+    text: "Create a team with other fighters. Your team ranks everyone by their training score, so you always know who's putting in the work.",
+  },
 ];
 
 export default function AppScreens() {

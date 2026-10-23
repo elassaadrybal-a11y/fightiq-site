@@ -44,10 +44,10 @@ const beats: Beat[] = [
   },
   {
     side: "right",
-    kicker: "Training score",
-    title: "Show up, log it, watch it add up.",
-    text: "A score and streaks that reward consistency, plus team leaderboards.",
-    screen: "/screens/profile.png",
+    kicker: "Leaderboard teams",
+    title: "Build a team. Climb the board.",
+    text: "Create a team with other fighters and see who's putting in the work. Everyone is ranked by their training score.",
+    screen: "/screens/leaderboard-teams.png",
   },
 ];
 
