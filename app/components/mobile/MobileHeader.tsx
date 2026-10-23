@@ -11,7 +11,7 @@ const LINKS = [
   { href: "/the-app", label: "The App" },
 ];
 
-const notifyHref = "/contact?topic=launch";
+const contactHref = "/contact";
 
 export default function MobileHeader() {
   const [open, setOpen] = useState(false);
@@ -49,8 +49,8 @@ export default function MobileHeader() {
                 {l.label}
               </Link>
             ))}
-            <a href={notifyHref} className="ml-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">
-              Get notified
+            <a href={contactHref} className="ml-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">
+              Contact us
             </a>
           </nav>
 
@@ -77,8 +77,8 @@ export default function MobileHeader() {
                 {l.label}
               </Link>
             ))}
-            <a href={notifyHref} onClick={close} className="mt-2 flex h-12 items-center justify-center rounded-full bg-white text-base font-semibold text-black">
-              Get notified
+            <a href={contactHref} onClick={close} className="mt-2 flex h-12 items-center justify-center rounded-full bg-white text-base font-semibold text-black">
+              Contact us
             </a>
           </nav>
         )}

@@ -99,7 +99,7 @@ export default function MobileLanding() {
           <p className="mt-4 text-sm uppercase tracking-[0.2em] text-white/50">Coming soon to iPhone</p>
           <a href="#m-trailer" className="mt-14 inline-flex flex-col items-center gap-2 text-lg text-white/80">
             Watch our launch video
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" className="animate-bounce motion-reduce:animate-none">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 5v14M5 12l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </a>

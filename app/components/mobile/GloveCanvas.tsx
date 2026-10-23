@@ -29,6 +29,10 @@ const RESET_AT = -0.5; // phrase resets once it is this far round the back
 // Must match OUTRO_START in GloveFeatures.tsx
 const OUTRO_START = 0.86; // share of the section used for the full turn
 const SMOOTHING = 3.5; // lower = glove follows scroll more lazily
+// Phones only: share of the section the glove holds still at the start,
+// so the first phrase writes in the middle instead of drifting left
+const MOBILE_HOLD = 0.1;
+const MOBILE_MAX_WIDTH = 768;
 
 const PURPLE = "#a855f7";
 const MAGENTA = "#d946ef";
@@ -171,6 +175,8 @@ function GloveRig({ progress, phrases }: { progress: NumRef; phrases: string[][]
   const glyphRefs = useRef<(TroikaText | null)[][]>([]);
   const phase = useRef<number[]>([]);
   const viewport = useThree((s) => s.viewport);
+  const screenWidth = useThree((s) => s.size.width);
+  const hold = screenWidth < MOBILE_MAX_WIDTH ? MOBILE_HOLD : 0;
   const scale = Math.min(viewport.width * GLOVE_SIZE, viewport.height * 0.3);
   const adv = useAdvances(phrases);
   const layout = useMemo(() => (adv ? layoutPhrases(phrases, adv) : null), [adv, phrases]);
@@ -183,7 +189,7 @@ function GloveRig({ progress, phrases }: { progress: NumRef; phrases: string[][]
     const p = progress.current;
 
     // One smooth full turn, then the outro
-    const q = clamp(p / OUTRO_START, 0, 1);
+    const q = clamp((p - hold) / (OUTRO_START - hold), 0, 1);
     const outro = smoothstep(OUTRO_START, 1, p);
     g.rotation.y += (-q * Math.PI * 2 - g.rotation.y) * k;
     g.rotation.x = 0.06 + Math.sin(t * 0.7) * 0.02;
