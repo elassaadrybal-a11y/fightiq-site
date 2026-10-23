@@ -19,7 +19,7 @@ const STATS = [
   { big: "1", title: "Score per session", body: "Log a training session and get a score, so progress is something you can see." },
 ];
 
-const INSIDE = ["Sparring analysis", "Opponent scan", "Training log with session scores", "Progress history on your profile"];
+const INSIDE = ["Sparring analysis", "Opponent scan", "Training log with session scores", "Progress history on your profile", "Leaderboards"];
 
 function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -60,7 +60,7 @@ function Chip({ children }: { children: ReactNode }) {
 function NotifyButton() {
   return (
     <a
-      href={`mailto:${site.contactEmail}?subject=Notify%20me%20about%20launch`}
+      href="/contact?topic=launch"
       className="inline-flex h-14 items-center rounded-full bg-white px-9 text-lg font-semibold text-black shadow-[0_0_40px_rgba(168,85,247,0.35)]"
     >
       Get notified
@@ -97,11 +97,11 @@ export default function MobileLanding() {
             <NotifyButton />
           </div>
           <p className="mt-4 text-sm uppercase tracking-[0.2em] text-white/50">Coming soon to iPhone</p>
-          <a href="#m-trailer" className="mt-14 inline-flex items-center gap-3 text-lg text-white/80">
-            <svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true">
-              <path d="M0 0l14 8-14 8z" fill="currentColor" />
+          <a href="#m-trailer" className="mt-14 inline-flex flex-col items-center gap-2 text-lg text-white/80">
+            Watch our launch video
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" className="animate-bounce motion-reduce:animate-none">
+              <path d="M12 5v14M5 12l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            Watch the trailer
           </a>
         </div>
       </section>
@@ -114,7 +114,7 @@ export default function MobileLanding() {
               <path d="M0 0l14 8-14 8z" fill="white" />
             </svg>
           </div>
-          <span className="absolute bottom-4 text-sm text-white/50">Trailer coming soon</span>
+          <span className="absolute bottom-4 text-sm text-white/50">Launch video coming soon</span>
         </div>
       </section>
 

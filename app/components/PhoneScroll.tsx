@@ -122,7 +122,7 @@ function BeatText({ beat, active }: { beat: Beat; active: boolean }) {
               See what you get
             </a>
             <a
-              href={`mailto:${site.contactEmail}?subject=Notify%20me%20about%20launch`}
+              href="/contact?topic=launch"
               className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:bg-surface"
             >
               Get notified

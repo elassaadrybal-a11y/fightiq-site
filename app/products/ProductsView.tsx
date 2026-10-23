@@ -6,7 +6,7 @@ import { OpponentReport, SparringReport } from "./Reports";
 import BuyButton from "./BuyButton";
 
 const ACCENT = "#a855f7";
-const notifyHref = `mailto:${site.contactEmail}?subject=Notify%20me%20when%20checkout%20opens`;
+const CHECKOUT_OPEN = process.env.NEXT_PUBLIC_CHECKOUT_ENABLED === "true";
 
 type ProductId = "sparring" | "opponent";
 
@@ -250,16 +250,34 @@ export default function ProductsView() {
       <section className="px-6 pb-20 pt-6 text-center">
         <Reveal>
           <h2 className="text-[clamp(2.4rem,11vw,3.25rem)] font-semibold leading-[1.05] tracking-tight">
-            Be first in line.
+            Ready when you are.
           </h2>
           <p className="mx-auto mt-4 max-w-sm text-lg text-white/65">
-            {"Checkout opens at launch. Leave your email and we'll tell you the day it does."}
+            {CHECKOUT_OPEN
+              ? "Upload your footage, check out, and get your full report. Got a question first? Send us a message."
+              : "Got a question about the reports? Send us a message."}
           </p>
+          {CHECKOUT_OPEN && (
+            <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <a
+                href="/analyze/sparring"
+                className="inline-flex h-14 w-full max-w-xs items-center justify-center rounded-full bg-white px-8 text-lg font-semibold text-black shadow-[0_0_40px_rgba(168,85,247,0.35)] sm:w-auto"
+              >
+                Analyse my sparring
+              </a>
+              <a
+                href="/analyze/opponent"
+                className="inline-flex h-14 w-full max-w-xs items-center justify-center rounded-full border border-white/15 bg-white/[0.04] px-8 text-lg font-semibold text-white sm:w-auto"
+              >
+                Scan an opponent
+              </a>
+            </div>
+          )}
           <a
-            href={notifyHref}
-            className="mt-9 inline-flex h-14 items-center rounded-full bg-white px-9 text-lg font-semibold text-black shadow-[0_0_40px_rgba(168,85,247,0.35)]"
+            href="/contact"
+            className={CHECKOUT_OPEN ? "mt-6 inline-block text-base text-white/60 underline underline-offset-4" : "mt-9 inline-flex h-14 items-center rounded-full bg-white px-9 text-lg font-semibold text-black"}
           >
-            Get notified
+            Contact us
           </a>
         </Reveal>
       </section>

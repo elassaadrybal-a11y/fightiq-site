@@ -19,7 +19,7 @@ function Chip({ children }: { children: React.ReactNode }) {
 
 // Printing: hide the site header and buttons, keep the dark colours, no page margins
 const PRINT_CSS =
-  "@media print{@page{margin:0}html,body,main{background:#060509!important}header,.fiq-noprint{display:none!important}main{padding:0!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}";
+  "@media print{@page{margin:0}html,body,main{background:#060509!important}header,footer,.fiq-noprint{display:none!important}main{padding:0!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}";
 
 function FullReport({ order }: { order: PublicOrder }) {
   const [shareLabel, setShareLabel] = useState("Share Report");
@@ -148,13 +148,13 @@ export default function OrderView({ initial }: { initial: PublicOrder }) {
     <div className="text-center">
       <h1 className="text-[clamp(2.2rem,10vw,3.2rem)] font-bold leading-tight tracking-tight">Something went wrong</h1>
       <p className="mx-auto mt-4 max-w-sm text-lg leading-relaxed text-white/70">
-        {"We couldn't finish this analysis. Email us with this page's link and we'll sort it out or refund you."}
+        {"We couldn't finish this analysis. Send us a message and we'll sort it out or refund you."}
       </p>
       <a
-        href={`mailto:${site.contactEmail}?subject=Order%20${order.id}`}
+        href={`/contact?topic=order&order=${order.id}`}
         className="mt-8 inline-flex h-14 items-center rounded-full bg-white px-8 text-lg font-semibold text-black"
       >
-        Email us
+        Contact us
       </a>
     </div>
   );

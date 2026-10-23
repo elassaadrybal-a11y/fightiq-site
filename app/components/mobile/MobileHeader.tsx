@@ -11,7 +11,7 @@ const LINKS = [
   { href: "/the-app", label: "The App" },
 ];
 
-const notifyHref = `mailto:${site.contactEmail}?subject=Notify%20me%20about%20launch`;
+const notifyHref = "/contact?topic=launch";
 
 export default function MobileHeader() {
   const [open, setOpen] = useState(false);
