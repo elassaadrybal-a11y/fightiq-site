@@ -1,5 +1,6 @@
 "use client";
 
+import { REPORT_PRICE } from "../pricing";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { site } from "../site";
 import { OpponentReport, SparringReport } from "./Reports";
@@ -128,7 +129,10 @@ function ProductCard({ p, onSample }: { p: Product; onSample: (id: ProductId) =>
         ))}
       </ul>
       <div className="mt-8 border-t border-white/10 pt-6">
-        <p className="text-sm text-white/50">Price announced at launch</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl font-semibold tracking-tight">{REPORT_PRICE}</span>
+          <span className="text-sm text-white/50">per report, one-time</span>
+        </div>
         <BuyButton product={p.id} />
         <button
           type="button"

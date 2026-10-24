@@ -106,16 +106,20 @@ export default function MobileLanding() {
         </div>
       </section>
 
-      {/* Trailer placeholder */}
+      {/* Launch video */}
       <section id="m-trailer" className="scroll-mt-28 px-4 pb-4">
-        <div className="relative mx-auto flex aspect-video w-full max-w-xl md:max-w-4xl items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-neutral-900">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/80">
-            <svg width="20" height="22" viewBox="0 0 14 16" aria-hidden="true" className="ml-1">
-              <path d="M0 0l14 8-14 8z" fill="white" />
-            </svg>
-          </div>
-          <span className="absolute bottom-4 text-sm text-white/50">Launch video coming soon</span>
+        <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-[28px] border border-white/10 bg-black md:max-w-4xl">
+          <video
+            className="block aspect-video w-full bg-black"
+            src="/launch-video.mp4#t=0.1"
+            controls
+            playsInline
+            preload="metadata"
+          />
         </div>
+        <p className="mx-auto mt-3 w-full max-w-xl text-center text-xs uppercase tracking-[0.25em] text-white/40 md:max-w-4xl">
+          {"Music \u2014 Txmy"}
+        </p>
       </section>
 
       {/* Scroll-highlighted statement */}
