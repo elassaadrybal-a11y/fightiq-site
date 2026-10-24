@@ -60,7 +60,17 @@ export default function Footer() {
 
         <div className="mt-12 flex flex-col gap-2 text-sm text-white/40 md:flex-row md:items-center md:justify-between">
           <p>{`\u00a9 2026 ${site.name}. All rights reserved.`}</p>
-          <p>Coming soon to iPhone</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <a href="/terms" className="transition hover:text-white">
+              Terms
+            </a>
+            <a href="/privacy" className="transition hover:text-white">
+              Privacy
+            </a>
+            <a href="/refunds" className="transition hover:text-white">
+              Refunds
+            </a>
+          </div>
         </div>
       </div>
     </footer>
