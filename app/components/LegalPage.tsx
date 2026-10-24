@@ -54,10 +54,5 @@ export function A({ href, children }: { href: string; children: ReactNode }) {
 
 // "Fight IQ is run by ..." line used at the top of each page
 export function SellerLine() {
-  return (
-    <>
-      {`Fight IQ is run by ${legal.seller}, ${legal.address}`}
-      {legal.companyNumber ? ` (enterprise number ${legal.companyNumber})` : ""}.
-    </>
-  );
+  return <>Fight IQ is an independent project.</>;
 }
