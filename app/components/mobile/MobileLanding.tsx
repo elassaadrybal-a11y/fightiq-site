@@ -117,9 +117,6 @@ export default function MobileLanding() {
             preload="metadata"
           />
         </div>
-        <p className="mx-auto mt-3 w-full max-w-xl text-center text-xs uppercase tracking-[0.25em] text-white/40 md:max-w-4xl">
-          {"Music \u2014 Txmy"}
-        </p>
       </section>
 
       {/* Scroll-highlighted statement */}
