@@ -111,7 +111,7 @@ export default function MobileLanding() {
         <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-[28px] border border-white/10 bg-black md:max-w-4xl">
           <video
             className="block aspect-video w-full bg-black"
-            src="/launch-video.mp4#t=0.1"
+            src="/launch-video-v2.mp4#t=0.1"
             controls
             playsInline
             preload="metadata"
